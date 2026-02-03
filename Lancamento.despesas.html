@@ -39,12 +39,45 @@
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* --- CSS OTIMIZADO PARA IMPRESSÃO --- */
         @media print {
             .no-print { display: none !important; }
-            body { background-color: white; }
+            
+            body { 
+                background-color: white; 
+                color: black;
+                font-size: 11px; /* Fonte levemente menor para caber melhor na impressão */
+            }
+
+            /* Forçar visibilidade total do texto */
+            .truncate, .max-w-xs {
+                white-space: normal !important;
+                overflow: visible !important;
+                text-overflow: clip !important;
+                width: auto !important;
+            }
+
+            /* Ajustes da Tabela */
+            table { width: 100% !important; table-layout: auto !important; }
+            tr { break-inside: avoid; page-break-inside: avoid; } 
+            td, th { 
+                padding: 4px 2px !important; 
+                vertical-align: top !important; 
+            }
+
+            /* Garante que a largura de 15 caracteres seja respeitada na impressão */
+            .print-w-15ch {
+                width: 15ch !important;
+                max-width: 15ch !important;
+                white-space: normal !important;
+                word-wrap: break-word !important;
+            }
+
+            .text-slate-400 { color: #555 !important; } 
+            .bg-slate-50 { background-color: transparent !important; }
             .print-shadow-none { box-shadow: none !important; border: 1px solid #ddd !important; }
-            .print-break-inside-avoid { break-inside: avoid; }
-            .print-mt-4 { margin-top: 1.5rem !important; }
+            .print-mt-4 { margin-top: 1rem !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>
 </head>
@@ -52,7 +85,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
         // --- Componente de Ícones ---
         const Icon = ({ path, className }) => (
@@ -64,7 +97,7 @@
             Edit: (props) => <Icon {...props} path='<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>' />,
             Trash2: (props) => <Icon {...props} path='<polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line>' />,
             Download: (props) => <Icon {...props} path='<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>' />,
-            Settings: (props) => <Icon {...props} path='<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>' />,
+            Settings: (props) => <Icon {...props} path='<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>' />,
             FileSpreadsheet: (props) => <Icon {...props} path='<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M8 13h2"></path><path d="M8 17h2"></path><path d="M14 13h2"></path><path d="M14 17h2"></path>' />,
             RotateCcw: (props) => <Icon {...props} path='<polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>' />,
             Calendar: (props) => <Icon {...props} path='<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>' />,
@@ -75,7 +108,10 @@
             Printer: (props) => <Icon {...props} path='<polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect>' />,
             Check: (props) => <Icon {...props} path='<polyline points="20 6 9 17 4 12"></polyline>' />,
             X: (props) => <Icon {...props} path='<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>' />,
-            AlertCircle: (props) => <Icon {...props} path='<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>' />
+            AlertCircle: (props) => <Icon {...props} path='<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>' />,
+            Save: (props) => <Icon {...props} path='<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline>' />,
+            Upload: (props) => <Icon {...props} path='<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line>' />,
+            AlertTriangle: (props) => <Icon {...props} path='<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>' />
         };
 
         // --- Dados Estáticos ---
@@ -165,9 +201,15 @@
             const [isSettingsOpen, setIsSettingsOpen] = useState(false);
             const [toasts, setToasts] = useState([]);
             
+            // Ref for file input
+            const fileInputRef = useRef(null);
+            
             // Modal States
             const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
             const [passwordInput, setPasswordInput] = useState('');
+            
+            // Delete Modal State
+            const [deleteModalState, setDeleteModalState] = useState({ open: false, step: 1, id: null });
             
             // Form States
             const [editingId, setEditingId] = useState(null);
@@ -201,6 +243,70 @@
                 setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
             };
 
+            // --- Backup & Restore Handlers ---
+            const handleBackup = async () => {
+                const dataStr = JSON.stringify(expenses, null, 2);
+                const fileName = `backup_despesas_${formatDateBR(getTodayLocal()).replace(/\//g, '-')}.json`;
+
+                if (window.showSaveFilePicker) {
+                    try {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: fileName,
+                            types: [{
+                                description: 'Arquivo de Backup JSON',
+                                accept: { 'application/json': ['.json'] },
+                            }],
+                        });
+                        const writable = await handle.createWritable();
+                        await writable.write(dataStr);
+                        await writable.close();
+                        showToast("Backup salvo no local selecionado!", "success");
+                        return;
+                    } catch (err) {
+                        if (err.name === 'AbortError') return;
+                    }
+                }
+
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast("Backup salvo na pasta Downloads!", "success");
+            };
+
+            const triggerRestore = () => {
+                fileInputRef.current.click();
+            };
+
+            const handleRestoreFile = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const importedData = JSON.parse(event.target.result);
+                        if (Array.isArray(importedData)) {
+                            if (confirm("Isso irá substituir todas as despesas atuais pelo backup. Tem certeza?")) {
+                                setExpenses(importedData);
+                                showToast("Dados restaurados com sucesso!");
+                                setIsSettingsOpen(false);
+                            }
+                        } else {
+                            showToast("Arquivo de backup inválido", "error");
+                        }
+                    } catch (err) {
+                        showToast("Erro ao ler arquivo", "error");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            };
+
             // --- Form Handlers ---
             const handleAmountChange = (e) => {
                 let val = e.target.value.replace(/\D/g, '');
@@ -213,11 +319,18 @@
                 setAmount('');
                 setNotes('');
                 setEditingId(null);
-                // Não limpamos categoria/loja/data para agilizar lançamentos sequenciais
             };
 
             const handleSubmit = (e) => {
                 e.preventDefault();
+                
+                // Validação rigorosa do Nome do Funcionário
+                if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
+                    showToast("Por favor, configure o Nome do Funcionário nas configurações antes de lançar.", "error");
+                    setIsSettingsOpen(true);
+                    return;
+                }
+
                 if (!description || !amount || !category || !store) {
                     showToast("Preencha todos os campos obrigatórios", "error");
                     return;
@@ -229,16 +342,13 @@
                     return;
                 }
 
-                // Lógica de Edição vs Criação
                 if (editingId) {
-                    // Modo Edição (Não aplica divisão de lojas, apenas atualiza o registro)
                     setExpenses(prev => prev.map(ex => ex.id === editingId ? {
                         ...ex, date, description, store, category, amount: totalVal, notes
                     } : ex));
                     showToast("Lançamento atualizado com sucesso!");
                     resetForm();
                 } else {
-                    // Modo Criação (Aplica divisão se necessário)
                     let entries = [];
                     if (store === "Piracicaba (DP - Realme - XV)") {
                         ["Dom Pedro II", "Realme", "Xv de Novembro"].forEach(s => entries.push({ s, v: totalVal / 3 }));
@@ -250,12 +360,14 @@
                         entries.push({ s: store, v: totalVal });
                     }
 
+                    // Salva o nome do funcionário em cada despesa individualmente
                     const newItems = entries.map(ent => ({
                         id: crypto.randomUUID(),
                         date, description, category, notes,
                         store: ent.s,
                         amount: ent.v,
-                        quantity: 1.0
+                        quantity: 1.0,
+                        employeeName: settings.employeeName // Salva o nome do funcionário
                     }));
 
                     setExpenses(prev => [...newItems, ...prev]);
@@ -268,7 +380,7 @@
                 setEditingId(ex.id);
                 setDate(ex.date);
                 setDescription(ex.description);
-                setStore(ex.store); // Cuidado: se a loja original era um grupo, aqui virá a loja individual
+                setStore(ex.store);
                 setCategory(ex.category);
                 setAmount(formatCurrency(ex.amount));
                 setNotes(ex.notes || '');
@@ -279,6 +391,25 @@
             const cancelEdit = () => {
                 resetForm();
                 showToast("Edição cancelada", "info");
+            };
+
+            // --- Delete Handlers ---
+            const confirmDeleteExpense = (id) => {
+                setDeleteModalState({ open: true, step: 1, id });
+            };
+
+            const handleDeleteStep = () => {
+                if (deleteModalState.step === 1) {
+                    setDeleteModalState(prev => ({ ...prev, step: 2 }));
+                } else {
+                    setExpenses(prev => prev.filter(i => i.id !== deleteModalState.id));
+                    setDeleteModalState({ open: false, step: 1, id: null });
+                    showToast("Lançamento excluído com sucesso", "success");
+                }
+            };
+
+            const closeDeleteModal = () => {
+                setDeleteModalState({ open: false, step: 1, id: null });
             };
 
             const confirmClearAll = () => {
@@ -299,7 +430,8 @@
                 const headers = ["date", "name", "store_name", "product_id", "unit_amount", "quantity", "description", "employee_id"];
                 const rows = expenses.map(ex => [
                     formatDateBR(ex.date), ex.description, ex.store, ex.category,
-                    formatCurrency(ex.amount), ex.quantity, ex.notes, settings.employeeName
+                    formatCurrency(ex.amount), ex.quantity, ex.notes, 
+                    ex.employeeName || settings.employeeName // Usa o nome salvo ou o das configurações
                 ]);
 
                 const csvContent = "\uFEFF" + [headers.join(';'), ...rows.map(r => r.map(f => `"${String(f).replace(/"/g, '""')}"`).join(';'))].join('\n');
@@ -314,8 +446,6 @@
             };
 
             // --- Calculations ---
-            
-            // Agrupar despesas por data
             const groupedExpenses = useMemo(() => {
                 const groups = {};
                 expenses.forEach(ex => {
@@ -323,7 +453,6 @@
                     groups[ex.date].push(ex);
                 });
                 
-                // Ordenar datas (mais recente primeiro)
                 return Object.keys(groups).sort((a, b) => b.localeCompare(a)).map(date => ({
                     date,
                     items: groups[date],
@@ -355,9 +484,14 @@
                                     <p className="text-xs text-odoo-50 opacity-80">Registro Profissional</p>
                                 </div>
                             </div>
-                            <button onClick={() => setIsSettingsOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                                <Icons.Settings className="w-5 h-5" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button onClick={handleBackup} className="p-2 hover:bg-white/10 rounded-full transition-colors" title="Salvar Backup">
+                                    <Icons.Save className="w-5 h-5" />
+                                </button>
+                                <button onClick={() => setIsSettingsOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors" title="Configurações">
+                                    <Icons.Settings className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -505,6 +639,7 @@
                                                         <tr>
                                                             {/* Removemos coluna Data pois já está no cabeçalho do grupo */}
                                                             <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider">Loja</th>
+                                                            <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider">Funcionário</th> {/* Reposicionado */}
                                                             <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider">Categoria</th>
                                                             <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider">Descrição</th>
                                                             <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider text-right">Valor</th>
@@ -519,10 +654,18 @@
                                                                         {ex.store}
                                                                     </span>
                                                                 </td>
+                                                                <td className="px-5 py-3.5 text-slate-600 text-xs">{ex.employeeName || settings.employeeName}</td> {/* Reposicionado */}
                                                                 <td className="px-5 py-3.5 text-slate-600">{ex.category}</td>
                                                                 <td className="px-5 py-3.5">
-                                                                    <div className="font-medium text-slate-800">{ex.description}</div>
-                                                                    {ex.notes && <div className="text-xs text-slate-400 mt-0.5 max-w-xs truncate">{ex.notes}</div>}
+                                                                    {/* Description: Force wrap around 15-20 chars width to grow vertically */}
+                                                                    <div className="font-medium text-slate-800 whitespace-normal break-words max-w-[15ch] leading-tight print:print-w-15ch">
+                                                                        {ex.description}
+                                                                    </div>
+                                                                    {ex.notes && (
+                                                                        <div className="text-xs text-slate-400 mt-1 whitespace-normal break-words max-w-[15ch] leading-tight print:print-w-15ch">
+                                                                            {ex.notes}
+                                                                        </div>
+                                                                    )}
                                                                 </td>
                                                                 <td className="px-5 py-3.5 text-right font-bold text-slate-700 tabular-nums">
                                                                     {formatCurrency(ex.amount)}
@@ -532,7 +675,7 @@
                                                                         <button onClick={() => startEdit(ex)} className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-md transition-colors" title="Editar">
                                                                             <Icons.Edit className="w-4 h-4" />
                                                                         </button>
-                                                                        <button onClick={() => setExpenses(prev => prev.filter(i => i.id !== ex.id))} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors" title="Excluir">
+                                                                        <button onClick={() => confirmDeleteExpense(ex.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors" title="Excluir">
                                                                             <Icons.Trash2 className="w-4 h-4" />
                                                                         </button>
                                                                     </div>
@@ -557,7 +700,37 @@
                         )}
                     </div>
 
-                    {/* Modal Senha Seguro */}
+                    {/* Modal Exclusão Unitária */}
+                    {deleteModalState.open && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in no-print">
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100">
+                                <div className="p-6 text-center">
+                                    <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4 ${deleteModalState.step === 1 ? 'bg-orange-100' : 'bg-red-100'}`}>
+                                        {deleteModalState.step === 1 ? <Icons.AlertTriangle className="w-6 h-6 text-orange-500"/> : <Icons.Trash2 className="w-6 h-6 text-red-600"/>}
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-800 mb-2">
+                                        {deleteModalState.step === 1 ? "Confirmar Exclusão" : "Atenção!"}
+                                    </h3>
+                                    <p className="text-sm text-slate-600 mb-6 px-2">
+                                        {deleteModalState.step === 1 ? "Deseja realmente excluir este lançamento?" : "Os dados serão excluídos definitivamente. Está de acordo?"}
+                                    </p>
+                                    
+                                    <div className="flex gap-3">
+                                        <button onClick={closeDeleteModal} 
+                                            className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50">
+                                            Não
+                                        </button>
+                                        <button onClick={handleDeleteStep} 
+                                            className={`flex-1 py-2.5 text-white font-bold rounded-xl shadow-md ${deleteModalState.step === 1 ? 'bg-orange-500 hover:bg-orange-600' : 'bg-red-600 hover:bg-red-700'}`}>
+                                            Sim
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Senha Seguro (Limpar Tudo) */}
                     {isPasswordModalOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in no-print">
                             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100">
@@ -588,19 +761,55 @@
                         </div>
                     )}
                     
-                    {/* Modal Settings (Simplificado visualmente) */}
+                    {/* Modal Settings */}
                     {isSettingsOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm no-print">
-                            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-                                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                    <Icons.Settings className="w-5 h-5 text-odoo-500"/> Configurações
-                                </h3>
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Funcionário</label>
-                                        <input type="text" value={settings.employeeName} onChange={e => setSettings({...settings, employeeName: e.target.value})} className="w-full p-2.5 border rounded-lg" />
+                            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
+                                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <Icons.Settings className="w-5 h-5 text-odoo-500"/> Configurações & Backup
+                                    </h3>
+                                    <button onClick={() => setIsSettingsOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                        <Icons.X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                
+                                <div className="p-6 space-y-6 overflow-y-auto">
+                                    {/* Preferências */}
+                                    <div className="space-y-3">
+                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Preferências</h4>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Funcionário <span className="text-red-500">*</span></label>
+                                            <input type="text" value={settings.employeeName} onChange={e => setSettings({...settings, employeeName: e.target.value})} 
+                                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none" />
+                                            <p className="text-xs text-slate-400 mt-1">Nome obrigatório para realizar lançamentos.</p>
+                                        </div>
                                     </div>
-                                    <button onClick={() => setIsSettingsOpen(false)} className="w-full py-2.5 bg-slate-800 text-white font-bold rounded-lg mt-2">Salvar</button>
+
+                                    {/* Dados */}
+                                    <div className="space-y-3 pt-3 border-t border-slate-100">
+                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Gerenciamento de Dados</h4>
+                                        <p className="text-xs text-slate-500 mb-2">Salve seus dados em um arquivo seguro para não perdê-los.</p>
+                                        
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <button onClick={triggerRestore} className="flex items-center justify-center gap-2 w-full py-2.5 bg-white text-slate-700 hover:bg-slate-50 font-medium rounded-lg border border-slate-200 transition-colors">
+                                                <Icons.Upload className="w-4 h-4" /> Restaurar Backup
+                                            </button>
+                                            <input 
+                                                type="file" 
+                                                ref={fileInputRef} 
+                                                onChange={handleRestoreFile} 
+                                                accept=".json" 
+                                                className="hidden" 
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="p-4 bg-slate-50 border-t border-slate-100">
+                                    <button onClick={() => setIsSettingsOpen(false)} className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg shadow-sm">
+                                        Concluir
+                                    </button>
                                 </div>
                             </div>
                         </div>
