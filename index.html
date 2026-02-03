@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Despesas Odoo</title>
+    
+    <!-- Fonte Inter (Padrão Moderno) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Configurações do Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        odoo: { 500: '#714B67', 600: '#5F3F56', 700: '#4D3345' } // Cores inspiradas no Odoo
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- React & Babel -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #f1f5f9; }
+        input[type=number] { -moz-appearance: textfield; }
+        input::-webkit-calendar-picker-indicator { opacity: 100; cursor: pointer; }
+        
+        /* Animações */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- CSS OTIMIZADO PARA IMPRESSÃO --- */
+        @media print {
+            .no-print { display: none !important; }
+            
+            body { 
+                background-color: white; 
+                color: black;
+                font-size: 11px; /* Fonte levemente menor para caber melhor na impressão */
+            }
+
+            /* Forçar visibilidade total do texto */
+            .truncate, .max-w-xs {
+                white-space: normal !important;
+                overflow: visible !important;
+                text-overflow: clip !important;
+                width: auto !important;
+            }
+
+            /* Ajustes da Tabela */
+            table { width: 100% !important; table-layout: auto !important; }
+            tr { break-inside: avoid; page-break-inside: avoid; } 
+            td, th { 
+                padding: 4px 2px !important; 
+                vertical-align: top !important; 
+            }
+
+            /* Garante que a largura de 15 caracteres seja respeitada na impressão */
+            .print-w-15ch {
+                width: 15ch !important;
+                max-width: 15ch !important;
+                white-space: normal !important;
+                word-wrap: break-word !important;
+            }
+
+            .text-slate-400 { color: #555 !important; } 
+            .bg-slate-50 { background-color: transparent !important; }
+            .print-shadow-none { box-shadow: none !important; border: 1px solid #ddd !important; }
+            .print-mt-4 { margin-top: 1rem !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- Componente de Ícones ---
+        const Icon = ({ path, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} dangerouslySetInnerHTML={{ __html: path }} />
+        );
+
+        const Icons = {
+            Plus: (props) => <Icon {...props} path='<line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>' />,
+            Edit: (props) => <Icon {...props} path='<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>' />,
+            Trash2: (props) => <Icon {...props} path='<polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line>' />,
+            Download: (props) => <Icon {...props} path='<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>' />,
+            Settings: (props) => <Icon {...props} path='<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>' />,
+            FileSpreadsheet: (props) => <Icon {...props} path='<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M8 13h2"></path><path d="M8 17h2"></path><path d="M14 13h2"></path><path d="M14 17h2"></path>' />,
+            RotateCcw: (props) => <Icon {...props} path='<polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>' />,
+            Calendar: (props) => <Icon {...props} path='<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>' />,
+            Tag: (props) => <Icon {...props} path='<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line>' />,
+            User: (props) => <Icon {...props} path='<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>' />,
+            DollarSign: (props) => <Icon {...props} path='<line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>' />,
+            Store: (props) => <Icon {...props} path='<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>' />,
+            Printer: (props) => <Icon {...props} path='<polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect>' />,
+            Check: (props) => <Icon {...props} path='<polyline points="20 6 9 17 4 12"></polyline>' />,
+            X: (props) => <Icon {...props} path='<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>' />,
+            AlertCircle: (props) => <Icon {...props} path='<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>' />,
+            Save: (props) => <Icon {...props} path='<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline>' />,
+            Upload: (props) => <Icon {...props} path='<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line>' />,
+            AlertTriangle: (props) => <Icon {...props} path='<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>' />
+        };
+
+        // --- Dados Estáticos ---
+        const CATEGORIES_LIST = [
+            "Conta de", "Escola", "Faculdade", "Salario", "Contabilidade",
+            "Recarga Celular", "Estacionamento", "Odoo", "Marketing",
+            "Despesa Jack", "Condomínio", "Energia", "Pensão", 
+            "Vale Transporte", "Vale Alimentação", "FGTS", "DARF", 
+            "Sistema", "Aluguel", "Cartão Crédito", "Consorcio", 
+            "Simples", "Advogado", "Mensalidade", "Influenciador(a)", 
+            "Seguro", "Segurança", "Material de Consumo", "Requisição", 
+            "Frete", "Imposto", "Particular Jack", "Renovação", "Despesa"
+        ].sort();
+
+        const STORES_LIST = [
+            "Dom Pedro II", "Realme", "Xv de Novembro", "Premium", "Kassouf",
+            "Piracicaba (DP - Realme - XV)", "Amparo (Premium - Kassouf)", "Todas"
+        ];
+
+        const getStoreColorClass = (storeName) => {
+            const map = {
+                "Dom Pedro II": "bg-blue-50 text-blue-700 border-blue-200 ring-blue-500/30",     
+                "Realme": "bg-yellow-50 text-yellow-700 border-yellow-200 ring-yellow-500/30",         
+                "Xv de Novembro": "bg-gray-100 text-gray-700 border-gray-300 ring-gray-500/30",      
+                "Premium": "bg-purple-50 text-purple-700 border-purple-200 ring-purple-500/30",        
+                "Amparo": "bg-purple-50 text-purple-700 border-purple-200 ring-purple-500/30",         
+                "Kassouf": "bg-orange-50 text-orange-700 border-orange-200 ring-orange-500/30",        
+                "Piracicaba (DP - Realme - XV)": "bg-red-50 text-red-700 border-red-200 ring-red-500/30", 
+                "Amparo (Premium - Kassouf)": "bg-pink-50 text-pink-700 border-pink-200 ring-pink-500/30",   
+                "Todas": "bg-green-50 text-green-700 border-green-200 ring-green-500/30"            
+            };
+            return map[storeName] || "bg-gray-50 text-gray-600 border-gray-200";
+        };
+
+        const DEFAULT_SETTINGS = {
+            employeeName: "Seu Nome",
+            currency: "R$",
+            categories: CATEGORIES_LIST.map(cat => ({ label: cat, odooRef: cat }))
+        };
+
+        // --- Helpers ---
+        const getTodayLocal = () => {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        const formatDateBR = (dateString) => {
+            if (!dateString) return "";
+            const [year, month, day] = dateString.split('-');
+            return `${day}/${month}/${year}`;
+        };
+
+        const formatCurrency = (value) => {
+            return new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+        };
+
+        // --- Componente de Notificação (Toast) ---
+        const ToastContainer = ({ toasts, removeToast }) => (
+            <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+                {toasts.map(toast => (
+                    <div key={toast.id} className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border-l-4 transform transition-all duration-300 animate-in slide-in-from-right fade-in bg-white ${
+                        toast.type === 'error' ? 'border-red-500' : 
+                        toast.type === 'success' ? 'border-green-500' : 'border-blue-500'
+                    }`}>
+                        {toast.type === 'error' ? <Icons.AlertCircle className="w-5 h-5 text-red-500"/> : 
+                         toast.type === 'success' ? <Icons.Check className="w-5 h-5 text-green-500"/> : 
+                         <Icons.AlertCircle className="w-5 h-5 text-blue-500"/>}
+                        <div>
+                            <p className="font-medium text-sm text-slate-800">{toast.message}</p>
+                        </div>
+                        <button onClick={() => removeToast(toast.id)} className="text-slate-400 hover:text-slate-600">
+                            <Icons.X className="w-4 h-4" />
+                        </button>
+                    </div>
+                ))}
+            </div>
+        );
+
+        // --- Componente Principal ---
+        const App = () => {
+            // States
+            const [expenses, setExpenses] = useState([]);
+            const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+            const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+            const [toasts, setToasts] = useState([]);
+            
+            // Ref for file input
+            const fileInputRef = useRef(null);
+            
+            // Modal States
+            const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+            const [passwordInput, setPasswordInput] = useState('');
+            
+            // Delete Modal State
+            const [deleteModalState, setDeleteModalState] = useState({ open: false, step: 1, id: null });
+            
+            // Form States
+            const [editingId, setEditingId] = useState(null);
+            const [date, setDate] = useState(getTodayLocal());
+            const [description, setDescription] = useState('');
+            const [store, setStore] = useState('');
+            const [category, setCategory] = useState('');
+            const [amount, setAmount] = useState('');
+            const [notes, setNotes] = useState('');
+
+            // --- Effects ---
+            useEffect(() => {
+                const saved = localStorage.getItem('odoo_fast_expenses');
+                if (saved) setExpenses(JSON.parse(saved));
+                
+                const savedSet = localStorage.getItem('odoo_fast_settings');
+                if (savedSet) {
+                    const parsed = JSON.parse(savedSet);
+                    parsed.categories = CATEGORIES_LIST.map(cat => ({ label: cat, odooRef: cat }));
+                    setSettings(parsed);
+                }
+            }, []);
+
+            useEffect(() => { localStorage.setItem('odoo_fast_expenses', JSON.stringify(expenses)); }, [expenses]);
+            useEffect(() => { localStorage.setItem('odoo_fast_settings', JSON.stringify(settings)); }, [settings]);
+
+            // --- Notification Helper ---
+            const showToast = (message, type = 'success') => {
+                const id = Date.now();
+                setToasts(prev => [...prev, { id, message, type }]);
+                setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+            };
+
+            // --- Backup & Restore Handlers ---
+            const handleBackup = async () => {
+                const dataStr = JSON.stringify(expenses, null, 2);
+                const fileName = `backup_despesas_${formatDateBR(getTodayLocal()).replace(/\//g, '-')}.json`;
+
+                if (window.showSaveFilePicker) {
+                    try {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: fileName,
+                            types: [{
+                                description: 'Arquivo de Backup JSON',
+                                accept: { 'application/json': ['.json'] },
+                            }],
+                        });
+                        const writable = await handle.createWritable();
+                        await writable.write(dataStr);
+                        await writable.close();
+                        showToast("Backup salvo no local selecionado!", "success");
+                        return;
+                    } catch (err) {
+                        if (err.name === 'AbortError') return;
+                    }
+                }
+
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast("Backup salvo na pasta Downloads!", "success");
+            };
+
+            const triggerRestore = () => {
+                fileInputRef.current.click();
+            };
+
+            const handleRestoreFile = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const importedData = JSON.parse(event.target.result);
+                        if (Array.isArray(importedData)) {
+                            if (confirm("Isso irá substituir todas as despesas atuais pelo backup. Tem certeza?")) {
+                                setExpenses(importedData);
+                                showToast("Dados restaurados com sucesso!");
+                                setIsSettingsOpen(false);
+                            }
+                        } else {
+                            showToast("Arquivo de backup inválido", "error");
+                        }
+                    } catch (err) {
+                        showToast("Erro ao ler arquivo", "error");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            };
+
+            // --- Form Handlers ---
+            const handleAmountChange = (e) => {
+                let val = e.target.value.replace(/\D/g, '');
+                if (!val) { setAmount(''); return; }
+                setAmount(new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(val) / 100));
+            };
+
+            const resetForm = () => {
+                setDescription('');
+                setAmount('');
+                setNotes('');
+                setEditingId(null);
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                
+                // Validação rigorosa do Nome do Funcionário
+                if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
+                    showToast("Por favor, configure o Nome do Funcionário nas configurações antes de lançar.", "error");
+                    setIsSettingsOpen(true);
+                    return;
+                }
+
+                if (!description || !amount || !category || !store) {
+                    showToast("Preencha todos os campos obrigatórios", "error");
+                    return;
+                }
+
+                const totalVal = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
+                if (isNaN(totalVal) || totalVal <= 0) {
+                    showToast("Valor inválido", "error");
+                    return;
+                }
+
+                if (editingId) {
+                    setExpenses(prev => prev.map(ex => ex.id === editingId ? {
+                        ...ex, date, description, store, category, amount: totalVal, notes
+                    } : ex));
+                    showToast("Lançamento atualizado com sucesso!");
+                    resetForm();
+                } else {
+                    let entries = [];
+                    if (store === "Piracicaba (DP - Realme - XV)") {
+                        ["Dom Pedro II", "Realme", "Xv de Novembro"].forEach(s => entries.push({ s, v: totalVal / 3 }));
+                    } else if (store === "Amparo (Premium - Kassouf)") {
+                        ["Premium", "Kassouf"].forEach(s => entries.push({ s, v: totalVal / 2 }));
+                    } else if (store === "Todas") {
+                        ["Dom Pedro II", "Realme", "Xv de Novembro", "Premium", "Kassouf"].forEach(s => entries.push({ s, v: totalVal / 5 }));
+                    } else {
+                        entries.push({ s: store, v: totalVal });
+                    }
+
+                    // Salva o nome do funcionário em cada despesa individualmente
+                    const newItems = entries.map(ent => ({
+                        id: crypto.randomUUID(),
+                        date, description, category, notes,
+                        store: ent.s,
+                        amount: ent.v,
+                        quantity: 1.0,
+                        employeeName: settings.employeeName // Salva o nome do funcionário
+                    }));
+
+                    setExpenses(prev => [...newItems, ...prev]);
+                    showToast(entries.length > 1 ? `${entries.length} despesas geradas com sucesso!` : "Despesa adicionada com sucesso!");
+                    resetForm();
+                }
+            };
+
+            const startEdit = (ex) => {
+                setEditingId(ex.id);
+                setDate(ex.date);
+                setDescription(ex.description);
+                setStore(ex.store);
+                setCategory(ex.category);
+                setAmount(formatCurrency(ex.amount));
+                setNotes(ex.notes || '');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                showToast("Modo de edição ativado", "info");
+            };
+
+            const cancelEdit = () => {
+                resetForm();
+                showToast("Edição cancelada", "info");
+            };
+
+            // --- Delete Handlers ---
+            const confirmDeleteExpense = (id) => {
+                setDeleteModalState({ open: true, step: 1, id });
+            };
+
+            const handleDeleteStep = () => {
+                if (deleteModalState.step === 1) {
+                    setDeleteModalState(prev => ({ ...prev, step: 2 }));
+                } else {
+                    setExpenses(prev => prev.filter(i => i.id !== deleteModalState.id));
+                    setDeleteModalState({ open: false, step: 1, id: null });
+                    showToast("Lançamento excluído com sucesso", "success");
+                }
+            };
+
+            const closeDeleteModal = () => {
+                setDeleteModalState({ open: false, step: 1, id: null });
+            };
+
+            const confirmClearAll = () => {
+                if (passwordInput === "#Banana@10") {
+                    setExpenses([]);
+                    setIsPasswordModalOpen(false);
+                    setPasswordInput('');
+                    showToast("Todos os dados foram apagados", "success");
+                } else {
+                    showToast("Senha incorreta", "error");
+                }
+            };
+
+            // --- Export ---
+            const exportToCSV = () => {
+                if (expenses.length === 0) return showToast("Nada para exportar", "error");
+                
+                const headers = ["date", "name", "store_name", "product_id", "unit_amount", "quantity", "description", "employee_id"];
+                const rows = expenses.map(ex => [
+                    formatDateBR(ex.date), ex.description, ex.store, ex.category,
+                    formatCurrency(ex.amount), ex.quantity, ex.notes, 
+                    ex.employeeName || settings.employeeName // Usa o nome salvo ou o das configurações
+                ]);
+
+                const csvContent = "\uFEFF" + [headers.join(';'), ...rows.map(r => r.map(f => `"${String(f).replace(/"/g, '""')}"`).join(';'))].join('\n');
+                const url = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `despesas_odoo_${formatDateBR(getTodayLocal()).replace(/\//g, '-')}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast("Arquivo CSV gerado!");
+            };
+
+            // --- Calculations ---
+            const groupedExpenses = useMemo(() => {
+                const groups = {};
+                expenses.forEach(ex => {
+                    if (!groups[ex.date]) groups[ex.date] = [];
+                    groups[ex.date].push(ex);
+                });
+                
+                return Object.keys(groups).sort((a, b) => b.localeCompare(a)).map(date => ({
+                    date,
+                    items: groups[date],
+                    total: groups[date].reduce((sum, item) => sum + item.amount, 0)
+                }));
+            }, [expenses]);
+
+            const totalsByStore = useMemo(() => {
+                const acc = {};
+                expenses.forEach(ex => {
+                    acc[ex.store] = (acc[ex.store] || 0) + ex.amount;
+                });
+                return acc;
+            }, [expenses]);
+            
+            const totalGeneral = expenses.reduce((sum, ex) => sum + ex.amount, 0);
+
+            return (
+                <div className="min-h-screen bg-slate-50 font-sans pb-20 print:bg-white print:pb-0">
+                    <ToastContainer toasts={toasts} removeToast={id => setToasts(p => p.filter(t => t.id !== id))} />
+
+                    {/* Navbar */}
+                    <div className="bg-odoo-600 text-white shadow-lg sticky top-0 z-20 no-print backdrop-blur-md bg-opacity-95">
+                        <div className="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-white/10 rounded-lg"><Icons.FileSpreadsheet className="w-5 h-5" /></div>
+                                <div>
+                                    <h1 className="font-bold text-lg leading-tight">Despesas Odoo</h1>
+                                    <p className="text-xs text-odoo-50 opacity-80">Registro Profissional</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={handleBackup} className="p-2 hover:bg-white/10 rounded-full transition-colors" title="Salvar Backup">
+                                    <Icons.Save className="w-5 h-5" />
+                                </button>
+                                <button onClick={() => setIsSettingsOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors" title="Configurações">
+                                    <Icons.Settings className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-5xl mx-auto p-4 space-y-6">
+                        
+                        {/* Dashboard Resumido */}
+                        {expenses.length > 0 && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 no-print fade-in">
+                                {Object.entries(totalsByStore).map(([storeName, val]) => (
+                                    <div key={storeName} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col">
+                                        <span className="text-[10px] uppercase font-bold text-slate-400 truncate">{storeName}</span>
+                                        <span className="text-sm font-bold text-slate-700">{settings.currency} {formatCurrency(val)}</span>
+                                        <div className={`h-1 w-full mt-2 rounded-full ${getStoreColorClass(storeName).split(' ')[0].replace('bg-', 'bg-')}`}></div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Formulário Principal */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden no-print">
+                            <div className={`h-1.5 w-full ${editingId ? 'bg-orange-500' : 'bg-odoo-500'}`}></div>
+                            <div className="p-6">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        {editingId ? <Icons.Edit className="w-5 h-5 text-orange-500"/> : <Icons.Plus className="w-5 h-5 text-odoo-500"/>}
+                                        {editingId ? "Editar Lançamento" : "Novo Lançamento"}
+                                    </h2>
+                                    {editingId && (
+                                        <button onClick={cancelEdit} className="text-xs font-medium text-slate-500 hover:text-slate-700 underline">
+                                            Cancelar Edição
+                                        </button>
+                                    )}
+                                </div>
+
+                                <form onSubmit={handleSubmit} className="space-y-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        {/* Data */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Data</label>
+                                            <div className="relative">
+                                                <input type="date" required value={date} onChange={e => setDate(e.target.value)}
+                                                    className="w-full pl-3 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 focus:border-odoo-500 outline-none transition-all text-slate-700 font-medium" />
+                                            </div>
+                                        </div>
+
+                                        {/* Categoria */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Categoria</label>
+                                            <input type="text" list="cat-list" required value={category} onChange={e => setCategory(e.target.value)} placeholder="Selecione..."
+                                                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all" />
+                                            <datalist id="cat-list">{settings.categories.map((c, i) => <option key={i} value={c.label}/>)}</datalist>
+                                        </div>
+
+                                        {/* Descrição */}
+                                        <div className="space-y-1.5 md:col-span-2">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Descrição</label>
+                                            <input type="text" required placeholder="Ex: Café com cliente" value={description} onChange={e => setDescription(e.target.value)}
+                                                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all" />
+                                        </div>
+
+                                        {/* Loja */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Loja / Grupo</label>
+                                            <select required value={store} onChange={e => setStore(e.target.value)}
+                                                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all">
+                                                <option value="" disabled>Selecione...</option>
+                                                {STORES_LIST.map((l, i) => <option key={i} value={l}>{l}</option>)}
+                                            </select>
+                                            {!editingId && store.includes("Piracicaba") && <p className="text-[11px] text-red-500 font-medium animate-pulse">* Divide por 3</p>}
+                                            {!editingId && store.includes("Amparo") && <p className="text-[11px] text-pink-500 font-medium animate-pulse">* Divide por 2</p>}
+                                            {!editingId && store === "Todas" && <p className="text-[11px] text-green-600 font-medium animate-pulse">* Divide por 5</p>}
+                                        </div>
+
+                                        {/* Valor */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Valor ({settings.currency})</label>
+                                            <div className="relative">
+                                                <input type="text" inputMode="numeric" required placeholder="0,00" value={amount} onChange={handleAmountChange}
+                                                    className="w-full pl-3 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all font-mono text-lg font-bold text-slate-700" />
+                                            </div>
+                                        </div>
+
+                                        {/* Obs */}
+                                        <div className="space-y-1.5 md:col-span-2">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Observações (Opcional)</label>
+                                            <input type="text" value={notes} onChange={e => setNotes(e.target.value)}
+                                                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all text-sm" />
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" className={`w-full py-3.5 px-4 rounded-xl font-bold text-white shadow-lg transform transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${editingId ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-200' : 'bg-odoo-600 hover:bg-odoo-700 shadow-purple-200'}`}>
+                                        {editingId ? <Icons.Check className="w-5 h-5"/> : <Icons.Plus className="w-5 h-5"/>}
+                                        {editingId ? "Salvar Alterações" : "Adicionar Despesa"}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        {/* Barra de Ações e Totais */}
+                        {expenses.length > 0 && (
+                            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 print:border-none print:shadow-none print:p-0 print:mb-6">
+                                <div>
+                                    <p className="text-xs text-slate-400 uppercase font-bold mb-1 no-print">Total Geral</p>
+                                    <p className="text-3xl font-extrabold text-slate-800 tracking-tight">
+                                        <span className="text-lg text-slate-400 font-normal mr-1">{settings.currency}</span>
+                                        {formatCurrency(totalGeneral)}
+                                    </p>
+                                    <p className="text-xs text-slate-400 mt-1 no-print">{expenses.length} registros</p>
+                                </div>
+                                <div className="flex gap-3 w-full md:w-auto no-print">
+                                    <button onClick={() => setIsPasswordModalOpen(true)} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 py-2.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100 font-medium">
+                                        <Icons.Trash2 className="w-4 h-4" /> Limpar
+                                    </button>
+                                    <button onClick={() => window.print()} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 rounded-lg transition-all font-medium shadow-sm">
+                                        <Icons.Printer className="w-4 h-4" /> Imprimir
+                                    </button>
+                                    <button onClick={exportToCSV} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all font-bold transform hover:-translate-y-0.5">
+                                        <Icons.Download className="w-4 h-4" /> Exportar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* LISTA DE DADOS - AGRUPADA POR DATA */}
+                        {expenses.length > 0 && (
+                            <div className="space-y-8 print:space-y-8">
+                                {groupedExpenses.map(group => (
+                                    <div key={group.date} className="print-break-inside-avoid">
+                                        {/* Cabeçalho do Dia */}
+                                        <div className="flex items-end justify-between mb-3 px-1 border-b border-slate-300 pb-2">
+                                            <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                                                <Icons.Calendar className="w-5 h-5 text-odoo-500" />
+                                                {formatDateBR(group.date)}
+                                            </h3>
+                                            <span className="text-sm font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                                                Total do dia: {settings.currency} {formatCurrency(group.total)}
+                                            </span>
+                                        </div>
+
+                                        {/* Tabela do Dia */}
+                                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border print:border-slate-300">
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left text-sm">
+                                                    <thead className="bg-slate-50 border-b border-slate-200">
+                                                        <tr>
+                                                            {/* Removemos coluna Data pois já está no cabeçalho do grupo */}
+                                                            <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider">Loja</th>
+                                                            <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider">Funcionário</th> {/* Reposicionado */}
+                                                            <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider">Categoria</th>
+                                                            <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider">Descrição</th>
+                                                            <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider text-right">Valor</th>
+                                                            <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider text-center no-print w-24">Ações</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100">
+                                                        {group.items.map((ex, idx) => (
+                                                            <tr key={ex.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-blue-50/30 transition-colors group`}>
+                                                                <td className="px-5 py-3.5 whitespace-nowrap">
+                                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold border ring-1 ring-inset ${getStoreColorClass(ex.store)}`}>
+                                                                        {ex.store}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-5 py-3.5 text-slate-600 text-xs">{ex.employeeName || settings.employeeName}</td> {/* Reposicionado */}
+                                                                <td className="px-5 py-3.5 text-slate-600">{ex.category}</td>
+                                                                <td className="px-5 py-3.5">
+                                                                    {/* Description: Force wrap around 15-20 chars width to grow vertically */}
+                                                                    <div className="font-medium text-slate-800 whitespace-normal break-words max-w-[15ch] leading-tight print:print-w-15ch">
+                                                                        {ex.description}
+                                                                    </div>
+                                                                    {ex.notes && (
+                                                                        <div className="text-xs text-slate-400 mt-1 whitespace-normal break-words max-w-[15ch] leading-tight print:print-w-15ch">
+                                                                            {ex.notes}
+                                                                        </div>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-5 py-3.5 text-right font-bold text-slate-700 tabular-nums">
+                                                                    {formatCurrency(ex.amount)}
+                                                                </td>
+                                                                <td className="px-5 py-3.5 text-center no-print">
+                                                                    <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                        <button onClick={() => startEdit(ex)} className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-md transition-colors" title="Editar">
+                                                                            <Icons.Edit className="w-4 h-4" />
+                                                                        </button>
+                                                                        <button onClick={() => confirmDeleteExpense(ex.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors" title="Excluir">
+                                                                            <Icons.Trash2 className="w-4 h-4" />
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        
+                        {expenses.length === 0 && (
+                            <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-slate-200 no-print flex flex-col items-center justify-center text-slate-400">
+                                <div className="bg-slate-50 p-4 rounded-full mb-3"><Icons.FileSpreadsheet className="w-8 h-8 opacity-50"/></div>
+                                <p className="font-medium text-slate-500">Nenhuma despesa registrada.</p>
+                                <p className="text-sm opacity-70">Preencha o formulário acima para começar.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Modal Exclusão Unitária */}
+                    {deleteModalState.open && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in no-print">
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100">
+                                <div className="p-6 text-center">
+                                    <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4 ${deleteModalState.step === 1 ? 'bg-orange-100' : 'bg-red-100'}`}>
+                                        {deleteModalState.step === 1 ? <Icons.AlertTriangle className="w-6 h-6 text-orange-500"/> : <Icons.Trash2 className="w-6 h-6 text-red-600"/>}
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-800 mb-2">
+                                        {deleteModalState.step === 1 ? "Confirmar Exclusão" : "Atenção!"}
+                                    </h3>
+                                    <p className="text-sm text-slate-600 mb-6 px-2">
+                                        {deleteModalState.step === 1 ? "Deseja realmente excluir este lançamento?" : "Os dados serão excluídos definitivamente. Está de acordo?"}
+                                    </p>
+                                    
+                                    <div className="flex gap-3">
+                                        <button onClick={closeDeleteModal} 
+                                            className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50">
+                                            Não
+                                        </button>
+                                        <button onClick={handleDeleteStep} 
+                                            className={`flex-1 py-2.5 text-white font-bold rounded-xl shadow-md ${deleteModalState.step === 1 ? 'bg-orange-500 hover:bg-orange-600' : 'bg-red-600 hover:bg-red-700'}`}>
+                                            Sim
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Senha Seguro (Limpar Tudo) */}
+                    {isPasswordModalOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in no-print">
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100">
+                                <div className="p-6 text-center">
+                                    <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                                        <Icons.Trash2 className="w-6 h-6 text-red-600" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-800 mb-2">Apagar Todos os Dados?</h3>
+                                    <p className="text-sm text-slate-500 mb-6">Esta ação não pode ser desfeita. Digite a senha de administrador para confirmar.</p>
+                                    
+                                    <input type="password" placeholder="Senha de segurança" autoFocus
+                                        value={passwordInput} onChange={e => setPasswordInput(e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-center font-bold text-slate-800 mb-4" 
+                                    />
+                                    
+                                    <div className="flex gap-3">
+                                        <button onClick={() => { setIsPasswordModalOpen(false); setPasswordInput(''); }} 
+                                            className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50">
+                                            Cancelar
+                                        </button>
+                                        <button onClick={confirmClearAll} 
+                                            className="flex-1 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-md shadow-red-200">
+                                            Apagar Tudo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Modal Settings */}
+                    {isSettingsOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm no-print">
+                            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
+                                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <Icons.Settings className="w-5 h-5 text-odoo-500"/> Configurações & Backup
+                                    </h3>
+                                    <button onClick={() => setIsSettingsOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                        <Icons.X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                
+                                <div className="p-6 space-y-6 overflow-y-auto">
+                                    {/* Preferências */}
+                                    <div className="space-y-3">
+                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Preferências</h4>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Funcionário <span className="text-red-500">*</span></label>
+                                            <input type="text" value={settings.employeeName} onChange={e => setSettings({...settings, employeeName: e.target.value})} 
+                                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none" />
+                                            <p className="text-xs text-slate-400 mt-1">Nome obrigatório para realizar lançamentos.</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Dados */}
+                                    <div className="space-y-3 pt-3 border-t border-slate-100">
+                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Gerenciamento de Dados</h4>
+                                        <p className="text-xs text-slate-500 mb-2">Salve seus dados em um arquivo seguro para não perdê-los.</p>
+                                        
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <button onClick={triggerRestore} className="flex items-center justify-center gap-2 w-full py-2.5 bg-white text-slate-700 hover:bg-slate-50 font-medium rounded-lg border border-slate-200 transition-colors">
+                                                <Icons.Upload className="w-4 h-4" /> Restaurar Backup
+                                            </button>
+                                            <input 
+                                                type="file" 
+                                                ref={fileInputRef} 
+                                                onChange={handleRestoreFile} 
+                                                accept=".json" 
+                                                className="hidden" 
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="p-4 bg-slate-50 border-t border-slate-100">
+                                    <button onClick={() => setIsSettingsOpen(false)} className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg shadow-sm">
+                                        Concluir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
