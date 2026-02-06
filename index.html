@@ -125,19 +125,19 @@
             Upload: (props) => <Icon {...props} path='<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line>' />,
             AlertTriangle: (props) => <Icon {...props} path='<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>' />,
             Search: (props) => <Icon {...props} path='<circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>' />,
-            Copy: (props) => <Icon {...props} path='<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>' />
+            Copy: (props) => <Icon {...props} path='<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>' />,
+            Home: (props) => <Icon {...props} path='<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>' />,
+            ChevronLeft: (props) => <Icon {...props} path='<polyline points="15 18 9 12 15 6"></polyline>' />,
+            ChevronRight: (props) => <Icon {...props} path='<polyline points="9 18 15 12 9 6"></polyline>' />,
+            Clock: (props) => <Icon {...props} path='<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>' />,
+            CheckSquare: (props) => <Icon {...props} path='<polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>' />
         };
 
         // --- Dados Estáticos ---
         const CATEGORIES_LIST = [
-            "Conta de", "Escola", "Faculdade", "Salario", "Contabilidade",
-            "Recarga Celular", "Estacionamento", "Odoo", "Marketing",
-            "Despesa Jack", "Condomínio", "Energia", "Pensão", 
-            "Vale Transporte", "Vale Alimentação", "FGTS", "DARF", 
-            "Sistema", "Aluguel", "Cartão Crédito", "Consorcio", 
-            "Simples", "Advogado", "Mensalidade", "Influenciador(a)", 
-            "Seguro", "Segurança", "Material de Consumo", "Requisição", 
-            "Frete", "Imposto", "Particular Jack", "Renovação", "Despesa"
+            "Despesa Fixa", "Despesa", "Salário", "Vale Alimentação",
+            "Vale Transporte", "Vale (Adiantamento)", "Despesa Jack",
+            "Impostos", "Requisição"
         ].sort();
 
         const STORES_LIST = [
@@ -145,14 +145,23 @@
             "Piracicaba (DP - Realme - XV)", "Amparo (Premium - Kassouf)", "Todas"
         ];
 
+        // --- Configuração de Lembretes Fixos ---
+        const FIXED_NOTIFICATIONS = [
+            { day: 5, description: "Pagamento de Salários" },
+            { day: 5, description: "Contabilidade Colorado" },
+            { day: 5, description: "Faculdade Filipe" },
+            { day: 5, description: "Escola Wendell" },
+            { day: 5, description: "Aluguel Loja Premium" }
+        ];
+
         const getStoreColorClass = (storeName) => {
             const map = {
                 "Dom Pedro II": "bg-blue-50 text-blue-700 border-blue-200 ring-blue-500/30",     
                 "Realme": "bg-yellow-50 text-yellow-700 border-yellow-200 ring-yellow-500/30",         
-                "Xv de Novembro": "bg-gray-100 text-gray-700 border-gray-300 ring-gray-500/30",      
-                "Premium": "bg-purple-50 text-purple-700 border-purple-200 ring-purple-500/30",        
+                "Xv de Novembro": "bg-gray-100 text-gray-700 border-gray-300 ring-gray-500/30",       
+                "Premium": "bg-purple-50 text-purple-700 border-purple-200 ring-purple-500/30",         
                 "Amparo": "bg-purple-50 text-purple-700 border-purple-200 ring-purple-500/30",         
-                "Kassouf": "bg-orange-50 text-orange-700 border-orange-200 ring-orange-500/30",        
+                "Kassouf": "bg-orange-50 text-orange-700 border-orange-200 ring-orange-500/30",         
                 "Piracicaba (DP - Realme - XV)": "bg-red-50 text-red-700 border-red-200 ring-red-500/30", 
                 "Amparo (Premium - Kassouf)": "bg-pink-50 text-pink-700 border-pink-200 ring-pink-500/30",   
                 "Todas": "bg-green-50 text-green-700 border-green-200 ring-green-500/30"            
@@ -185,6 +194,36 @@
             return new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
         };
 
+        // --- Componente Personalizado de Input de Data ---
+        const DateInput = ({ value, onChange, required, className, placeholder = "dd/mm/aaaa" }) => {
+            const [inputType, setInputType] = useState('text');
+
+            return (
+                <div className="relative w-full">
+                    <input
+                        type={inputType}
+                        required={required}
+                        value={inputType === 'text' && value ? formatDateBR(value) : value}
+                        onChange={onChange}
+                        onFocus={(e) => {
+                            setInputType('date');
+                            if (e.target.showPicker) {
+                                try { e.target.showPicker(); } catch (err) {}
+                            }
+                        }}
+                        onBlur={() => setInputType('text')}
+                        placeholder={placeholder}
+                        className={className}
+                    />
+                    {inputType === 'text' && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-slate-400">
+                            <Icons.Calendar className="w-4 h-4" />
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
         // --- Componente de Notificação (Toast) ---
         const ToastContainer = ({ toasts, removeToast }) => (
             <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
@@ -207,6 +246,219 @@
             </div>
         );
 
+        // --- Componente de Calendário (Visualização + Checklist) ---
+        const ExpenseCalendar = ({ showToast }) => {
+            const [currentDate, setCurrentDate] = useState(new Date());
+            const [checkedState, setCheckedState] = useState({});
+            
+            // Modals State
+            const [confirmPayModal, setConfirmPayModal] = useState({ open: false, desc: null });
+            const [fixModal, setFixModal] = useState({ open: false, desc: null });
+            const [fixPassword, setFixPassword] = useState('');
+
+            const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+            const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+
+            const daysInMonth = getDaysInMonth(year, month);
+            const firstDay = getFirstDayOfMonth(year, month);
+
+            const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+            const handleNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+            const handleToday = () => setCurrentDate(new Date());
+
+            const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+            // Carregar estado dos checks do localStorage
+            useEffect(() => {
+                const savedChecks = localStorage.getItem('odoo_calendar_checks');
+                if (savedChecks) {
+                    setCheckedState(JSON.parse(savedChecks));
+                }
+            }, []);
+
+            const setCheckStatus = (desc, status) => {
+                const key = `${year}-${month}-${desc}`;
+                const newState = { ...checkedState, [key]: status };
+                setCheckedState(newState);
+                localStorage.setItem('odoo_calendar_checks', JSON.stringify(newState));
+            };
+
+            const initiatePayment = (desc) => {
+                setConfirmPayModal({ open: true, desc });
+            };
+
+            const confirmPayment = () => {
+                if (confirmPayModal.desc) {
+                    setCheckStatus(confirmPayModal.desc, true);
+                    setConfirmPayModal({ open: false, desc: null });
+                    if(showToast) showToast("Marcado como Pago!", "success");
+                }
+            };
+
+            const initiateFix = (desc) => {
+                setFixModal({ open: true, desc });
+                setFixPassword('');
+            };
+
+            const confirmFix = () => {
+                if (fixPassword === "#Banana@10") {
+                    setCheckStatus(fixModal.desc, false);
+                    setFixModal({ open: false, desc: null });
+                    if(showToast) showToast("Correção realizada.", "success");
+                } else {
+                    if(showToast) showToast("Senha incorreta.", "error");
+                }
+            };
+
+            return (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden fade-in flex flex-col relative">
+                    {/* Header do Calendário */}
+                    <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50">
+                        <div className="flex items-center gap-4">
+                             <div className="flex bg-white rounded-lg shadow-sm border border-slate-200 p-1">
+                                <button onClick={handlePrevMonth} className="p-1 hover:bg-slate-100 rounded-md transition-colors"><Icons.ChevronLeft className="w-5 h-5 text-slate-500"/></button>
+                                <button onClick={handleToday} className="px-3 text-xs font-bold text-slate-600 hover:text-odoo-600">Hoje</button>
+                                <button onClick={handleNextMonth} className="p-1 hover:bg-slate-100 rounded-md transition-colors"><Icons.ChevronRight className="w-5 h-5 text-slate-500"/></button>
+                            </div>
+                            <h2 className="text-xl font-bold text-slate-800 capitalize">{monthNames[month]} <span className="text-slate-400 font-light">{year}</span></h2>
+                        </div>
+                    </div>
+
+                    {/* Grid do Calendário */}
+                    <div className="grid grid-cols-7 bg-slate-200 gap-px">
+                        {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(d => (
+                            <div key={d} className="bg-slate-50 p-2 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                {d}
+                            </div>
+                        ))}
+                        
+                        {/* Dias Vazios (Offset) */}
+                        {Array.from({ length: firstDay }).map((_, i) => (
+                            <div key={`empty-${i}`} className="bg-white h-24 md:h-28"></div>
+                        ))}
+
+                        {/* Dias do Mês */}
+                        {Array.from({ length: daysInMonth }).map((_, i) => {
+                            const day = i + 1;
+                            const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
+                            
+                            // Visualização apenas informativa no calendário
+                            const hasNotification = FIXED_NOTIFICATIONS.some(n => n.day === day);
+
+                            return (
+                                <div key={day} className={`bg-white h-24 md:h-28 p-2 flex flex-col relative group ${isToday ? 'bg-blue-50/30' : ''}`}>
+                                    <div className="flex justify-between items-start">
+                                        <span className={`text-sm font-bold ${isToday ? 'bg-odoo-600 text-white w-6 h-6 flex items-center justify-center rounded-full' : 'text-slate-700'}`}>{day}</span>
+                                    </div>
+                                    
+                                    {hasNotification && (
+                                        <div className="mt-2 space-y-1">
+                                            {FIXED_NOTIFICATIONS.filter(n => n.day === day).map((note, idx) => (
+                                                <div key={idx} className="bg-purple-100 text-purple-700 text-[9px] px-1.5 py-0.5 rounded font-medium truncate" title={note.description}>
+                                                    {note.description}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Box de Lembretes/Checklist */}
+                    <div className="p-6 border-t border-slate-200 bg-slate-50/50">
+                        <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                            <Icons.CheckSquare className="w-5 h-5 text-odoo-600"/> 
+                            Pagamentos Fixos de {monthNames[month]}
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {FIXED_NOTIFICATIONS.map((item, idx) => {
+                                 const key = `${year}-${month}-${item.description}`;
+                                 const isChecked = !!checkedState[key];
+                                 
+                                 return (
+                                     <div key={idx} className={`flex items-center gap-3 bg-white p-4 rounded-xl border shadow-sm transition-all duration-300 ${isChecked ? 'border-green-200 bg-green-50/30' : 'border-slate-200 hover:border-odoo-300'}`}>
+                                         <div className="relative flex items-center">
+                                            <input 
+                                                type="checkbox" 
+                                                id={`check-${idx}`}
+                                                checked={isChecked} 
+                                                readOnly
+                                                onClick={() => !isChecked && initiatePayment(item.description)}
+                                                className={`peer w-6 h-6 rounded-md border-2 border-slate-300 focus:ring-odoo-500 transition-all appearance-none ${!isChecked ? 'cursor-pointer hover:border-odoo-500' : 'cursor-default text-odoo-600 checked:bg-odoo-600 checked:border-odoo-600'}`}
+                                            />
+                                            <Icons.Check className="w-4 h-4 text-white absolute left-1 pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                         </div>
+                                         <div className={`flex-1 select-none ${isChecked ? "opacity-50" : ""}`} onClick={() => !isChecked && initiatePayment(item.description)}>
+                                             <p className={`font-bold text-sm ${isChecked ? "text-slate-500 line-through" : "text-slate-800 cursor-pointer"}`}>
+                                                 {item.description}
+                                             </p>
+                                             <p className="text-xs text-slate-500 mt-0.5 font-medium flex items-center gap-1">
+                                                 <Icons.Calendar className="w-3 h-3" /> Dia {item.day}
+                                             </p>
+                                         </div>
+                                         {isChecked && (
+                                             <div className="flex flex-col items-end gap-1">
+                                                 <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full animate-in fade-in zoom-in">Pago</span>
+                                                 <button onClick={() => initiateFix(item.description)} className="text-[10px] font-bold text-red-400 hover:text-red-600 hover:underline">
+                                                     Corrigir
+                                                 </button>
+                                             </div>
+                                         )}
+                                     </div>
+                                 )
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Modal Confirmar Pagamento */}
+                    {confirmPayModal.open && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in">
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 text-center transform transition-all scale-100">
+                                <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                                    <Icons.Check className="w-6 h-6 text-blue-600" />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-800 mb-2">Confirmar Pagamento?</h3>
+                                <p className="text-sm text-slate-500 mb-6">O pagamento de <strong>{confirmPayModal.desc}</strong> foi efetuado?</p>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setConfirmPayModal({open:false, desc:null})} className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50">Não</button>
+                                    <button onClick={confirmPayment} className="flex-1 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200">Sim</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Corrigir (Senha) */}
+                    {fixModal.open && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in">
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 text-center transform transition-all scale-100">
+                                <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                                    <Icons.RotateCcw className="w-6 h-6 text-red-600" />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-800 mb-2">Corrigir Status</h3>
+                                <p className="text-sm text-slate-500 mb-4">Digite a senha de administrador para reverter este pagamento.</p>
+                                <input 
+                                    type="password" 
+                                    autoFocus
+                                    placeholder="Senha"
+                                    value={fixPassword}
+                                    onChange={e => setFixPassword(e.target.value)}
+                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-center font-bold text-slate-800 mb-4"
+                                />
+                                <div className="flex gap-3">
+                                    <button onClick={() => setFixModal({open:false, desc:null})} className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50">Cancelar</button>
+                                    <button onClick={confirmFix} className="flex-1 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-lg shadow-red-200">Corrigir</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
         // --- Componente Principal ---
         const App = () => {
             // States
@@ -215,6 +467,9 @@
             const [isSettingsOpen, setIsSettingsOpen] = useState(false);
             const [toasts, setToasts] = useState([]);
             const [searchTerm, setSearchTerm] = useState('');
+            const [groupBy, setGroupBy] = useState('date'); // 'date' ou 'store'
+            const [filterDate, setFilterDate] = useState(''); // State para o filtro de data
+            const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' or 'calendar'
             
             // Ref for file input
             const fileInputRef = useRef(null);
@@ -380,7 +635,8 @@
                         store: ent.s,
                         amount: ent.v,
                         quantity: 1.0,
-                        employeeName: settings.employeeName
+                        employeeName: settings.employeeName,
+                        originalTotal: entries.length > 1 ? totalVal : null // Salva o total original se houver divisão
                     }));
 
                     setExpenses(prev => [...newItems, ...prev]);
@@ -399,6 +655,7 @@
                 setNotes(ex.notes || '');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 showToast("Modo de edição ativado", "info");
+                if (currentView === 'calendar') setCurrentView('dashboard'); // Switch back to dashboard to edit
             };
 
             const duplicateExpense = (ex) => {
@@ -411,6 +668,7 @@
                 setNotes(ex.notes || '');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 showToast("Dados copiados para novo lançamento", "info");
+                if (currentView === 'calendar') setCurrentView('dashboard');
             };
 
             const cancelEdit = () => {
@@ -472,29 +730,45 @@
 
             // --- Calculations & Filtering ---
             const filteredExpenses = useMemo(() => {
-                if (!searchTerm) return expenses;
-                const lowerSearch = searchTerm.toLowerCase();
-                return expenses.filter(ex => 
-                    ex.description.toLowerCase().includes(lowerSearch) ||
-                    ex.category.toLowerCase().includes(lowerSearch) ||
-                    ex.store.toLowerCase().includes(lowerSearch) ||
-                    ex.notes?.toLowerCase().includes(lowerSearch)
-                );
-            }, [expenses, searchTerm]);
+                let filtered = expenses;
+
+                // Filtro por Data Específica
+                if (filterDate) {
+                    filtered = filtered.filter(ex => ex.date === filterDate);
+                }
+
+                if (searchTerm) {
+                    const lowerSearch = searchTerm.toLowerCase();
+                    filtered = filtered.filter(ex => 
+                        ex.description.toLowerCase().includes(lowerSearch) ||
+                        ex.category.toLowerCase().includes(lowerSearch) ||
+                        ex.store.toLowerCase().includes(lowerSearch) ||
+                        ex.notes?.toLowerCase().includes(lowerSearch)
+                    );
+                }
+                
+                return filtered;
+            }, [expenses, searchTerm, filterDate]);
 
             const groupedExpenses = useMemo(() => {
                 const groups = {};
                 filteredExpenses.forEach(ex => {
-                    if (!groups[ex.date]) groups[ex.date] = [];
-                    groups[ex.date].push(ex);
+                    const key = groupBy === 'date' ? ex.date : ex.store;
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(ex);
                 });
                 
-                return Object.keys(groups).sort((a, b) => b.localeCompare(a)).map(date => ({
-                    date,
-                    items: groups[date],
-                    total: groups[date].reduce((sum, item) => sum + item.amount, 0)
+                const sortedKeys = Object.keys(groups).sort((a, b) => {
+                    if (groupBy === 'date') return b.localeCompare(a); // Descending for dates
+                    return a.localeCompare(b); // Ascending for stores
+                });
+
+                return sortedKeys.map(key => ({
+                    key,
+                    items: groups[key],
+                    total: groups[key].reduce((sum, item) => sum + item.amount, 0)
                 }));
-            }, [filteredExpenses]);
+            }, [filteredExpenses, groupBy]);
 
             const totalsByStore = useMemo(() => {
                 const acc = {};
@@ -516,7 +790,16 @@
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-white/10 rounded-lg"><Icons.FileSpreadsheet className="w-5 h-5" /></div>
                                 <div>
-                                    <h1 className="font-bold text-lg leading-tight">Despesas Odoo</h1>
+                                    <h1 className="font-bold text-lg leading-tight flex items-center gap-2">
+                                        Despesas Odoo
+                                        <button 
+                                            onClick={() => setCurrentView(currentView === 'dashboard' ? 'calendar' : 'dashboard')} 
+                                            className={`ml-2 p-1.5 rounded-full transition-colors ${currentView === 'calendar' ? 'bg-white text-odoo-600 hover:bg-slate-100' : 'bg-odoo-500/50 hover:bg-odoo-500 text-white'}`}
+                                            title={currentView === 'dashboard' ? "Ver Calendário" : "Voltar para Lista"}
+                                        >
+                                            {currentView === 'dashboard' ? <Icons.Calendar className="w-4 h-4" /> : <Icons.Home className="w-4 h-4" />}
+                                        </button>
+                                    </h1>
                                     <p className="text-xs text-odoo-50 opacity-80">Registro Profissional</p>
                                 </div>
                             </div>
@@ -533,223 +816,288 @@
 
                     <div className="max-w-5xl mx-auto p-4 space-y-6">
                         
-                        {/* Dashboard Resumido */}
-                        {expenses.length > 0 && (
-                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 no-print fade-in">
-                                {Object.entries(totalsByStore).map(([storeName, val]) => (
-                                    <div key={storeName} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col">
-                                        <span className="text-[10px] uppercase font-bold text-slate-400 truncate">{storeName}</span>
-                                        <span className="text-sm font-bold text-slate-700">{settings.currency} {formatCurrency(val)}</span>
-                                        <div className={`h-1 w-full mt-2 rounded-full ${getStoreColorClass(storeName).split(' ')[0].replace('bg-', 'bg-')}`}></div>
+                        {/* CONDITIONAL VIEW RENDERING */}
+                        {currentView === 'calendar' ? (
+                            <ExpenseCalendar showToast={showToast} />
+                        ) : (
+                            <>
+                                {/* Dashboard Resumido */}
+                                {expenses.length > 0 && (
+                                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 no-print fade-in">
+                                        {Object.entries(totalsByStore).map(([storeName, val]) => (
+                                            <div key={storeName} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col">
+                                                <span className="text-[10px] uppercase font-bold text-slate-400 truncate">{storeName}</span>
+                                                <span className="text-sm font-bold text-slate-700">{settings.currency} {formatCurrency(val)}</span>
+                                                <div className={`h-1 w-full mt-2 rounded-full ${getStoreColorClass(storeName).split(' ')[0].replace('bg-', 'bg-')}`}></div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                )}
 
-                        {/* Formulário Principal */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden no-print">
-                            <div className={`h-1.5 w-full ${editingId ? 'bg-orange-500' : 'bg-odoo-500'}`}></div>
-                            <div className="p-6">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                        {editingId ? <Icons.Edit className="w-5 h-5 text-orange-500"/> : <Icons.Plus className="w-5 h-5 text-odoo-500"/>}
-                                        {editingId ? "Editar Lançamento" : "Novo Lançamento"}
-                                    </h2>
-                                    {editingId && (
-                                        <button onClick={cancelEdit} className="text-xs font-medium text-slate-500 hover:text-slate-700 underline">
-                                            Cancelar Edição
-                                        </button>
-                                    )}
+                                {/* Formulário Principal */}
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden no-print">
+                                    <div className={`h-1.5 w-full ${editingId ? 'bg-orange-500' : 'bg-odoo-500'}`}></div>
+                                    <div className="p-6">
+                                        <div className="flex justify-between items-center mb-6">
+                                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                                {editingId ? <Icons.Edit className="w-5 h-5 text-orange-500"/> : <Icons.Plus className="w-5 h-5 text-odoo-500"/>}
+                                                {editingId ? "Editar Lançamento" : "Novo Lançamento"}
+                                            </h2>
+                                            {editingId && (
+                                                <button onClick={cancelEdit} className="text-xs font-medium text-slate-500 hover:text-slate-700 underline">
+                                                    Cancelar Edição
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <form onSubmit={handleSubmit} className="space-y-5">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                {/* Data */}
+                                                <div className="space-y-1.5">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Data</label>
+                                                    <DateInput 
+                                                        required 
+                                                        value={date} 
+                                                        onChange={e => setDate(e.target.value)}
+                                                        className="w-full pl-3 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 focus:border-odoo-500 outline-none transition-all text-slate-700 font-medium" 
+                                                    />
+                                                </div>
+
+                                                {/* Categoria */}
+                                                <div className="space-y-1.5">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Categoria</label>
+                                                    <select required value={category} onChange={e => setCategory(e.target.value)}
+                                                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all">
+                                                        <option value="" disabled>Selecione...</option>
+                                                        {settings.categories.map((c, i) => <option key={i} value={c.label}>{c.label}</option>)}
+                                                    </select>
+                                                </div>
+
+                                                {/* Descrição */}
+                                                <div className="space-y-1.5 md:col-span-2">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Descrição</label>
+                                                    <input type="text" required placeholder="Ex: Café com cliente" value={description} onChange={e => setDescription(e.target.value)}
+                                                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all" />
+                                                </div>
+
+                                                {/* Loja */}
+                                                <div className="space-y-1.5">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Loja / Grupo</label>
+                                                    <select required value={store} onChange={e => setStore(e.target.value)}
+                                                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all">
+                                                        <option value="" disabled>Selecione...</option>
+                                                        {STORES_LIST.map((l, i) => <option key={i} value={l}>{l}</option>)}
+                                                    </select>
+                                                    {!editingId && store.includes("Piracicaba") && <p className="text-[11px] text-red-500 font-medium animate-pulse">* Divide por 3</p>}
+                                                    {!editingId && store.includes("Amparo") && <p className="text-[11px] text-pink-500 font-medium animate-pulse">* Divide por 2</p>}
+                                                    {!editingId && store === "Todas" && <p className="text-[11px] text-green-600 font-medium animate-pulse">* Divide por 5</p>}
+                                                </div>
+
+                                                {/* Valor */}
+                                                <div className="space-y-1.5">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Valor ({settings.currency})</label>
+                                                    <div className="relative">
+                                                        <input type="text" inputMode="numeric" required placeholder="0,00" value={amount} onChange={handleAmountChange}
+                                                            className="w-full pl-3 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all font-mono text-lg font-bold text-slate-700" />
+                                                    </div>
+                                                </div>
+
+                                                {/* Obs */}
+                                                <div className="space-y-1.5 md:col-span-2">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Observações (Opcional)</label>
+                                                    <input type="text" value={notes} onChange={e => setNotes(e.target.value)}
+                                                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all text-sm" />
+                                                </div>
+                                            </div>
+
+                                            <button type="submit" className={`w-full py-3.5 px-4 rounded-xl font-bold text-white shadow-lg transform transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${editingId ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-200' : 'bg-odoo-600 hover:bg-odoo-700 shadow-purple-200'}`}>
+                                                {editingId ? <Icons.Check className="w-5 h-5"/> : <Icons.Plus className="w-5 h-5"/>}
+                                                {editingId ? "Salvar Alterações" : "Adicionar Despesa"}
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
 
-                                <form onSubmit={handleSubmit} className="space-y-5">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                        {/* Data */}
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Data</label>
-                                            <div className="relative">
-                                                <input type="date" required value={date} onChange={e => setDate(e.target.value)}
-                                                    className="w-full pl-3 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 focus:border-odoo-500 outline-none transition-all text-slate-700 font-medium" />
+                                {/* Barra de Ações e Totais */}
+                                {expenses.length > 0 && (
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4 print:border-none print:shadow-none print:p-0 print:mb-6">
+                                        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                                            <div>
+                                                <p className="text-xs text-slate-400 uppercase font-bold mb-1 no-print">Total Geral</p>
+                                                <p className="text-3xl font-extrabold text-slate-800 tracking-tight">
+                                                    <span className="text-lg text-slate-400 font-normal mr-1">{settings.currency}</span>
+                                                    {formatCurrency(totalGeneral)}
+                                                </p>
+                                                <p className="text-xs text-slate-400 mt-1 no-print">{filteredExpenses.length} registros</p>
+                                            </div>
+                                            <div className="flex gap-3 w-full md:w-auto no-print">
+                                                <button onClick={() => setIsPasswordModalOpen(true)} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 py-2.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100 font-medium">
+                                                    <Icons.Trash2 className="w-4 h-4" /> Limpar
+                                                </button>
+                                                <button onClick={() => window.print()} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 rounded-lg transition-all font-medium shadow-sm">
+                                                    <Icons.Printer className="w-4 h-4" /> Imprimir
+                                                </button>
+                                                <button onClick={exportToCSV} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all font-bold transform hover:-translate-y-0.5">
+                                                    <Icons.Download className="w-4 h-4" /> Exportar
+                                                </button>
                                             </div>
                                         </div>
+                                        
+                                        {/* Search Bar & Filters */}
+                                        <div className="flex flex-col md:flex-row gap-4 no-print items-end md:items-center">
+                                            <div className="relative flex-1 w-full">
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <Icons.Search className="w-5 h-5 text-slate-400" />
+                                                </div>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Pesquisar descrição, loja, categoria..." 
+                                                    value={searchTerm}
+                                                    onChange={e => setSearchTerm(e.target.value)}
+                                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all text-sm"
+                                                />
+                                            </div>
+                                            
+                                            <div className="flex flex-wrap gap-2 w-full md:w-auto items-center">
+                                                {/* Date Filter Input */}
+                                                <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg relative">
+                                                    <div className="w-32">
+                                                        <DateInput 
+                                                            value={filterDate} 
+                                                            onChange={(e) => setFilterDate(e.target.value)}
+                                                            className="w-full bg-transparent text-xs font-bold text-slate-600 outline-none px-2 py-1.5 cursor-pointer rounded-md hover:bg-white focus:bg-white transition-colors"
+                                                            placeholder="Filtrar Data"
+                                                        />
+                                                    </div>
+                                                    {filterDate && (
+                                                        <button onClick={() => setFilterDate('')} className="absolute right-[-8px] -top-2 bg-red-500 text-white rounded-full p-0.5 shadow-sm hover:bg-red-600 z-10">
+                                                            <Icons.X className="w-3 h-3"/>
+                                                        </button>
+                                                    )}
+                                                </div>
 
-                                        {/* Categoria */}
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Categoria</label>
-                                            <input type="text" list="cat-list" required value={category} onChange={e => setCategory(e.target.value)} placeholder="Selecione..."
-                                                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all" />
-                                            <datalist id="cat-list">{settings.categories.map((c, i) => <option key={i} value={c.label}/>)}</datalist>
-                                        </div>
+                                                <div className="h-6 w-px bg-slate-300 mx-1 hidden md:block"></div>
 
-                                        {/* Descrição */}
-                                        <div className="space-y-1.5 md:col-span-2">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Descrição</label>
-                                            <input type="text" required placeholder="Ex: Café com cliente" value={description} onChange={e => setDescription(e.target.value)}
-                                                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all" />
-                                        </div>
-
-                                        {/* Loja */}
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Loja / Grupo</label>
-                                            <select required value={store} onChange={e => setStore(e.target.value)}
-                                                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all">
-                                                <option value="" disabled>Selecione...</option>
-                                                {STORES_LIST.map((l, i) => <option key={i} value={l}>{l}</option>)}
-                                            </select>
-                                            {!editingId && store.includes("Piracicaba") && <p className="text-[11px] text-red-500 font-medium animate-pulse">* Divide por 3</p>}
-                                            {!editingId && store.includes("Amparo") && <p className="text-[11px] text-pink-500 font-medium animate-pulse">* Divide por 2</p>}
-                                            {!editingId && store === "Todas" && <p className="text-[11px] text-green-600 font-medium animate-pulse">* Divide por 5</p>}
-                                        </div>
-
-                                        {/* Valor */}
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Valor ({settings.currency})</label>
-                                            <div className="relative">
-                                                <input type="text" inputMode="numeric" required placeholder="0,00" value={amount} onChange={handleAmountChange}
-                                                    className="w-full pl-3 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all font-mono text-lg font-bold text-slate-700" />
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap">Agrupar:</span>
+                                                    <div className="flex bg-slate-100 p-1 rounded-lg">
+                                                        <button 
+                                                            onClick={() => setGroupBy('date')}
+                                                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${groupBy === 'date' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                                        >
+                                                            Data
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => setGroupBy('store')}
+                                                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${groupBy === 'store' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                                        >
+                                                            Loja
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-
-                                        {/* Obs */}
-                                        <div className="space-y-1.5 md:col-span-2">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Observações (Opcional)</label>
-                                            <input type="text" value={notes} onChange={e => setNotes(e.target.value)}
-                                                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all text-sm" />
-                                        </div>
                                     </div>
+                                )}
 
-                                    <button type="submit" className={`w-full py-3.5 px-4 rounded-xl font-bold text-white shadow-lg transform transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${editingId ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-200' : 'bg-odoo-600 hover:bg-odoo-700 shadow-purple-200'}`}>
-                                        {editingId ? <Icons.Check className="w-5 h-5"/> : <Icons.Plus className="w-5 h-5"/>}
-                                        {editingId ? "Salvar Alterações" : "Adicionar Despesa"}
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
+                                {/* LISTA DE DADOS - AGRUPADA POR DATA OU LOJA */}
+                                {expenses.length > 0 && (
+                                    <div className="space-y-8 print:space-y-8">
+                                        {groupedExpenses.map(group => (
+                                            <div key={group.key} className="print-break-inside-avoid">
+                                                {/* Cabeçalho do Grupo */}
+                                                <div className="flex items-end justify-between mb-3 px-1 border-b border-slate-300 pb-2">
+                                                    <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                                                        {groupBy === 'date' ? <Icons.Calendar className="w-5 h-5 text-odoo-500" /> : <Icons.Store className="w-5 h-5 text-odoo-500" />}
+                                                        {groupBy === 'date' ? formatDateBR(group.key) : group.key}
+                                                    </h3>
+                                                    <span className="text-sm font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                                                        Total: {settings.currency} {formatCurrency(group.total)}
+                                                    </span>
+                                                </div>
 
-                        {/* Barra de Ações e Totais */}
-                        {expenses.length > 0 && (
-                            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4 print:border-none print:shadow-none print:p-0 print:mb-6">
-                                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                                    <div>
-                                        <p className="text-xs text-slate-400 uppercase font-bold mb-1 no-print">Total Geral</p>
-                                        <p className="text-3xl font-extrabold text-slate-800 tracking-tight">
-                                            <span className="text-lg text-slate-400 font-normal mr-1">{settings.currency}</span>
-                                            {formatCurrency(totalGeneral)}
-                                        </p>
-                                        <p className="text-xs text-slate-400 mt-1 no-print">{filteredExpenses.length} registros</p>
+                                                {/* Tabela do Dia */}
+                                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border print:border-slate-300">
+                                                    <div className="overflow-x-auto max-h-[500px] overflow-y-auto print-scroll-fix">
+                                                        <table className="w-full text-left text-sm relative">
+                                                            <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+                                                                <tr>
+                                                                    {groupBy === 'date' && <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider bg-slate-50">Loja</th>}
+                                                                    <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider bg-slate-50">Funcionário</th>
+                                                                    <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider bg-slate-50">Categoria</th>
+                                                                    <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider bg-slate-50">Data</th>
+                                                                    <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider bg-slate-50">Descrição</th>
+                                                                    <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider text-right bg-slate-50">Valor</th>
+                                                                    <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider text-center no-print w-28 bg-slate-50">Ações</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-slate-100">
+                                                                {group.items.map((ex, idx) => (
+                                                                    <tr key={ex.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-blue-50/30 transition-colors group`}>
+                                                                        {groupBy === 'date' && (
+                                                                            <td className="px-5 py-3.5 whitespace-nowrap">
+                                                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold border ring-1 ring-inset ${getStoreColorClass(ex.store)}`}>
+                                                                                    {ex.store}
+                                                                                </span>
+                                                                            </td>
+                                                                        )}
+                                                                        <td className="px-5 py-3.5 text-slate-600 text-xs">{ex.employeeName || settings.employeeName}</td>
+                                                                        <td className="px-5 py-3.5 text-slate-600">{ex.category}</td>
+                                                                        <td className="px-5 py-3.5 whitespace-nowrap text-slate-600 font-medium text-xs">
+                                                                            {formatDateBR(ex.date)}
+                                                                        </td>
+                                                                        <td className="px-5 py-3.5">
+                                                                            <div className="font-medium text-slate-800 whitespace-normal break-words max-w-[15ch] leading-tight print:print-w-15ch">
+                                                                                {ex.description}
+                                                                            </div>
+                                                                            {ex.notes && (
+                                                                                <div className="text-xs text-slate-400 mt-1 whitespace-normal break-words max-w-[15ch] leading-tight print:print-w-15ch">
+                                                                                    {ex.notes}
+                                                                                </div>
+                                                                            )}
+                                                                        </td>
+                                                                        <td className="px-5 py-3.5 text-right font-bold text-slate-700 tabular-nums">
+                                                                            <div className="flex flex-col items-end">
+                                                                                <span>{formatCurrency(ex.amount)}</span>
+                                                                                {ex.originalTotal && (
+                                                                                    <span className="text-[10px] text-slate-400 font-normal bg-slate-100 px-1 rounded whitespace-nowrap" title="Valor total antes da divisão">
+                                                                                        Total: {formatCurrency(ex.originalTotal)}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="px-5 py-3.5 text-center no-print">
+                                                                            <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                <button onClick={() => duplicateExpense(ex)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-colors" title="Duplicar">
+                                                                                    <Icons.Copy className="w-4 h-4" />
+                                                                                </button>
+                                                                                <button onClick={() => startEdit(ex)} className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-md transition-colors" title="Editar">
+                                                                                    <Icons.Edit className="w-4 h-4" />
+                                                                                </button>
+                                                                                <button onClick={() => confirmDeleteExpense(ex.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors" title="Excluir">
+                                                                                    <Icons.Trash2 className="w-4 h-4" />
+                                                                                </button>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <div className="flex gap-3 w-full md:w-auto no-print">
-                                        <button onClick={() => setIsPasswordModalOpen(true)} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 py-2.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100 font-medium">
-                                            <Icons.Trash2 className="w-4 h-4" /> Limpar
-                                        </button>
-                                        <button onClick={() => window.print()} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 rounded-lg transition-all font-medium shadow-sm">
-                                            <Icons.Printer className="w-4 h-4" /> Imprimir
-                                        </button>
-                                        <button onClick={exportToCSV} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all font-bold transform hover:-translate-y-0.5">
-                                            <Icons.Download className="w-4 h-4" /> Exportar
-                                        </button>
-                                    </div>
-                                </div>
+                                )}
                                 
-                                {/* Search Bar */}
-                                <div className="relative no-print">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Icons.Search className="w-5 h-5 text-slate-400" />
+                                {expenses.length === 0 && (
+                                    <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-slate-200 no-print flex flex-col items-center justify-center text-slate-400">
+                                        <div className="bg-slate-50 p-4 rounded-full mb-3"><Icons.FileSpreadsheet className="w-8 h-8 opacity-50"/></div>
+                                        <p className="font-medium text-slate-500">Nenhuma despesa registrada.</p>
+                                        <p className="text-sm opacity-70">Preencha o formulário acima para começar.</p>
                                     </div>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Pesquisar descrição, loja, categoria..." 
-                                        value={searchTerm}
-                                        onChange={e => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all text-sm"
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        {/* LISTA DE DADOS - AGRUPADA POR DATA */}
-                        {expenses.length > 0 && (
-                            <div className="space-y-8 print:space-y-8">
-                                {groupedExpenses.map(group => (
-                                    <div key={group.date} className="print-break-inside-avoid">
-                                        {/* Cabeçalho do Dia */}
-                                        <div className="flex items-end justify-between mb-3 px-1 border-b border-slate-300 pb-2">
-                                            <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
-                                                <Icons.Calendar className="w-5 h-5 text-odoo-500" />
-                                                {formatDateBR(group.date)}
-                                            </h3>
-                                            <span className="text-sm font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
-                                                Total do dia: {settings.currency} {formatCurrency(group.total)}
-                                            </span>
-                                        </div>
-
-                                        {/* Tabela do Dia */}
-                                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border print:border-slate-300">
-                                            <div className="overflow-x-auto max-h-[500px] overflow-y-auto print-scroll-fix">
-                                                <table className="w-full text-left text-sm relative">
-                                                    <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm">
-                                                        <tr>
-                                                            <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider bg-slate-50">Loja</th>
-                                                            <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider bg-slate-50">Funcionário</th>
-                                                            <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider bg-slate-50">Categoria</th>
-                                                            <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider bg-slate-50">Descrição</th>
-                                                            <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider text-right bg-slate-50">Valor</th>
-                                                            <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider text-center no-print w-28 bg-slate-50">Ações</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-slate-100">
-                                                        {group.items.map((ex, idx) => (
-                                                            <tr key={ex.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-blue-50/30 transition-colors group`}>
-                                                                <td className="px-5 py-3.5 whitespace-nowrap">
-                                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold border ring-1 ring-inset ${getStoreColorClass(ex.store)}`}>
-                                                                        {ex.store}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="px-5 py-3.5 text-slate-600 text-xs">{ex.employeeName || settings.employeeName}</td>
-                                                                <td className="px-5 py-3.5 text-slate-600">{ex.category}</td>
-                                                                <td className="px-5 py-3.5">
-                                                                    <div className="font-medium text-slate-800 whitespace-normal break-words max-w-[15ch] leading-tight print:print-w-15ch">
-                                                                        {ex.description}
-                                                                    </div>
-                                                                    {ex.notes && (
-                                                                        <div className="text-xs text-slate-400 mt-1 whitespace-normal break-words max-w-[15ch] leading-tight print:print-w-15ch">
-                                                                            {ex.notes}
-                                                                        </div>
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-5 py-3.5 text-right font-bold text-slate-700 tabular-nums">
-                                                                    {formatCurrency(ex.amount)}
-                                                                </td>
-                                                                <td className="px-5 py-3.5 text-center no-print">
-                                                                    <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                        <button onClick={() => duplicateExpense(ex)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-colors" title="Duplicar">
-                                                                            <Icons.Copy className="w-4 h-4" />
-                                                                        </button>
-                                                                        <button onClick={() => startEdit(ex)} className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-md transition-colors" title="Editar">
-                                                                            <Icons.Edit className="w-4 h-4" />
-                                                                        </button>
-                                                                        <button onClick={() => confirmDeleteExpense(ex.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors" title="Excluir">
-                                                                            <Icons.Trash2 className="w-4 h-4" />
-                                                                        </button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        
-                        {expenses.length === 0 && (
-                            <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-slate-200 no-print flex flex-col items-center justify-center text-slate-400">
-                                <div className="bg-slate-50 p-4 rounded-full mb-3"><Icons.FileSpreadsheet className="w-8 h-8 opacity-50"/></div>
-                                <p className="font-medium text-slate-500">Nenhuma despesa registrada.</p>
-                                <p className="text-sm opacity-70">Preencha o formulário acima para começar.</p>
-                            </div>
+                                )}
+                            </>
                         )}
                     </div>
 
