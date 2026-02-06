@@ -533,22 +533,23 @@
             // --- Reminder Logic (Verifica a cada 30min) ---
             const checkPendingPayments = () => {
                 const now = new Date();
-                const day = now.getDate();
+                const currentDay = now.getDate();
                 const month = now.getMonth();
                 const year = now.getFullYear();
 
-                const todaysTasks = FIXED_NOTIFICATIONS.filter(n => n.day === day);
-                
-                if (todaysTasks.length > 0) {
-                    const pending = todaysTasks.filter(task => {
-                        const key = `${year}-${month}-${task.description}`;
-                        return !calendarChecks[key];
-                    });
+                // Verifica todas as notificações fixas do mês até o dia atual
+                const pending = FIXED_NOTIFICATIONS.filter(task => {
+                    // Se o dia da tarefa for maior que hoje, ainda não venceu (não alerta)
+                    if (task.day > currentDay) return false;
 
-                    if (pending.length > 0) {
-                        setPendingItems(pending);
-                        setShowReminder(true);
-                    }
+                    const key = `${year}-${month}-${task.description}`;
+                    // Retorna true se NÃO estiver marcado (pendente)
+                    return !calendarChecks[key];
+                });
+
+                if (pending.length > 0) {
+                    setPendingItems(pending);
+                    setShowReminder(true);
                 }
             };
 
@@ -752,6 +753,7 @@
                 showToast("Edição cancelada", "info");
             };
 
+            // --- Delete Handlers ---
             const confirmDeleteExpense = (id) => {
                 setDeleteModalState({ open: true, step: 1, id });
             };
@@ -781,6 +783,7 @@
                 }
             };
 
+            // --- Export ---
             const exportToCSV = () => {
                 if (expenses.length === 0) return showToast("Nada para exportar", "error");
                 
@@ -802,6 +805,7 @@
                 showToast("Arquivo CSV gerado!");
             };
 
+            // --- Calculations & Filtering ---
             const filteredExpenses = useMemo(() => {
                 let filtered = expenses;
                 if (filterDate) {
@@ -1186,14 +1190,14 @@
                                         <h3 className="text-lg font-bold text-slate-800 leading-tight">Pagamentos Pendentes!</h3>
                                     </div>
                                     <p className="text-sm text-slate-600 mb-4">
-                                        Existem pagamentos fixos programados para hoje que ainda não foram confirmados:
+                                        Existem pagamentos fixos pendentes neste mês:
                                     </p>
                                     <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 mb-6 max-h-40 overflow-y-auto">
                                         <ul className="space-y-2">
                                             {pendingItems.map((item, idx) => (
                                                 <li key={idx} className="flex items-center gap-2 text-sm font-medium text-slate-700">
                                                     <Icons.AlertCircle className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                                                    {item.description}
+                                                    {item.description} <span className="text-xs text-slate-400 ml-1">(Dia {item.day})</span>
                                                 </li>
                                             ))}
                                         </ul>
