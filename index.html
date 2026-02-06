@@ -344,6 +344,7 @@
             
             // Modals State
             const [confirmPayModal, setConfirmPayModal] = useState({ open: false, desc: null });
+            const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 }); // Posição do Mouse
             const [fixModal, setFixModal] = useState({ open: false, desc: null });
             const [fixPassword, setFixPassword] = useState('');
 
@@ -367,7 +368,12 @@
                 onToggleCheck(key, status);
             };
 
-            const initiatePayment = (desc) => {
+            // Captura a posição do clique para abrir o modal no local exato
+            const initiatePayment = (desc, e) => {
+                // Se o evento existir, captura as coordenadas
+                if (e) {
+                    setModalPosition({ x: e.clientX, y: e.clientY });
+                }
                 setConfirmPayModal({ open: true, desc });
             };
 
@@ -533,12 +539,16 @@
                                                 id={`check-${idx}`}
                                                 checked={isChecked} 
                                                 readOnly
-                                                onClick={() => !isChecked && initiatePayment(item.description)}
+                                                onClick={(e) => !isChecked && initiatePayment(item.description, e)}
                                                 className={`peer w-6 h-6 rounded-md border-2 border-slate-300 focus:ring-odoo-500 transition-all appearance-none ${!isChecked ? 'cursor-pointer hover:border-odoo-500' : 'cursor-default text-green-600 checked:bg-green-600 checked:border-green-600'}`}
                                             />
                                             <Icons.Check className="w-4 h-4 text-white absolute left-1 pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" />
                                          </div>
-                                         <label htmlFor={`check-${idx}`} className={`flex-1 cursor-pointer select-none ${isChecked ? "opacity-50" : ""}`}>
+                                         <label 
+                                            htmlFor={`check-${idx}`} 
+                                            className={`flex-1 cursor-pointer select-none ${isChecked ? "opacity-50" : ""}`} 
+                                            onClick={(e) => { e.preventDefault(); !isChecked && initiatePayment(item.description, e); }}
+                                         >
                                              <p className={`font-bold text-base ${isChecked ? "text-slate-500 line-through" : "text-slate-800"}`}>
                                                  {item.description}
                                              </p>
@@ -560,21 +570,31 @@
                         </div>
                     </div>
 
-                    {/* Modal Confirmar Pagamento */}
+                    {/* Modal Confirmar Pagamento (Posicionado no Mouse) */}
                     {confirmPayModal.open && (
-                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in">
-                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 text-center transform transition-all scale-100">
-                                <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                                    <Icons.Check className="w-6 h-6 text-blue-600" />
+                        <>
+                            {/* Backdrop transparente para fechar ao clicar fora */}
+                            <div className="fixed inset-0 z-40 cursor-default" onClick={() => setConfirmPayModal({open:false, desc:null})}></div>
+                            
+                            <div 
+                                className="fixed z-50 bg-white rounded-2xl shadow-2xl w-64 p-4 text-center border border-slate-100 animate-in fade-in zoom-in duration-150"
+                                style={{ 
+                                    top: modalPosition.y, 
+                                    left: modalPosition.x,
+                                    transform: 'translate(-50%, -50%)' // Centraliza exatamente onde o mouse está
+                                }}
+                            >
+                                <div className="mx-auto w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                                    <Icons.Check className="w-5 h-5 text-blue-600" />
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-800 mb-2">Confirmar Pagamento?</h3>
-                                <p className="text-sm text-slate-500 mb-6">O pagamento de <strong>{confirmPayModal.desc}</strong> foi efetuado?</p>
-                                <div className="flex gap-3">
-                                    <button onClick={() => setConfirmPayModal({open:false, desc:null})} className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50">Não</button>
-                                    <button onClick={confirmPayment} className="flex-1 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200">Sim</button>
+                                <h3 className="text-base font-bold text-slate-800 mb-1">Confirmar?</h3>
+                                <p className="text-xs text-slate-500 mb-4">{confirmPayModal.desc}</p>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setConfirmPayModal({open:false, desc:null})} className="flex-1 py-2 bg-slate-50 border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-100 text-xs">Não</button>
+                                    <button onClick={confirmPayment} className="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md shadow-blue-200 text-xs">Sim</button>
                                 </div>
                             </div>
-                        </div>
+                        </>
                     )}
 
                     {/* Modal Corrigir (Senha) */}
