@@ -319,6 +319,24 @@
             </div>
         );
 
+        // --- Helper de Áudio Global ---
+        // Contexto de áudio global para contornar bloqueios de autoplay
+        let globalAudioCtx = null;
+
+        const initAudioContext = () => {
+            if (!globalAudioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    globalAudioCtx = new AudioContext();
+                }
+            }
+            // Retoma o contexto se estiver suspenso (comum em navegadores modernos)
+            if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
+                globalAudioCtx.resume();
+            }
+            return globalAudioCtx;
+        };
+
         // --- Componente de Calendário (Visualização + Checklist) ---
         const ExpenseCalendar = ({ checkedState, onToggleCheck, showToast }) => {
             const [currentDate, setCurrentDate] = useState(new Date());
@@ -645,54 +663,70 @@
             useEffect(() => { localStorage.setItem('odoo_fast_settings', JSON.stringify(settings)); }, [settings]);
             useEffect(() => { localStorage.setItem('odoo_calendar_checks', JSON.stringify(calendarChecks)); }, [calendarChecks]);
 
-            // --- Confirmação ao Fechar a Página ---
+            // --- Inicialização de Segurança e Áudio ---
             useEffect(() => {
+                // Confirmação ao sair
                 const handleBeforeUnload = (e) => {
-                    // Texto do alerta (Navegadores modernos podem substituir por mensagem padrão do sistema)
                     const message = "Atenção: Você efetuou todos os lançamentos do dia e enviou o relatório?";
                     e.preventDefault();
-                    e.returnValue = message; // Exigido pelo Chrome/Edge
+                    e.returnValue = message;
                     return message;
                 };
 
+                // Desbloqueio de Áudio na primeira interação
+                const unlockAudio = () => {
+                    initAudioContext();
+                    // Remove o listener após a primeira interação para não pesar
+                    window.removeEventListener('click', unlockAudio);
+                    window.removeEventListener('keydown', unlockAudio);
+                    window.removeEventListener('touchstart', unlockAudio);
+                };
+
                 window.addEventListener('beforeunload', handleBeforeUnload);
+                window.addEventListener('click', unlockAudio);
+                window.addEventListener('keydown', unlockAudio);
+                window.addEventListener('touchstart', unlockAudio);
 
                 return () => {
                     window.removeEventListener('beforeunload', handleBeforeUnload);
+                    window.removeEventListener('click', unlockAudio);
+                    window.removeEventListener('keydown', unlockAudio);
+                    window.removeEventListener('touchstart', unlockAudio);
                 };
             }, []);
 
             // --- Helper de Som de Notificação ---
             const playNotificationSound = () => {
-                // Tenta tocar o arquivo MP3 personalizado
+                // Tenta tocar o MP3
                 const audio = new Audio('hey_listen.mp3');
                 
-                audio.play().catch((error) => {
-                    console.warn("Não foi possível tocar hey_listen.mp3, usando som padrão.", error);
-                    // Se der erro (ex: arquivo não encontrado), toca o som sintético original
-                    playSynthesizedBeep();
-                });
+                const playPromise = audio.play();
+
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.warn("Autoplay bloqueado ou arquivo não encontrado. Tentando som sintético.", error);
+                        playSynthesizedBeep();
+                    });
+                }
             };
 
-            // Som Sintético (Backup caso o MP3 falhe)
+            // Som Sintético (Backup Robusto)
             const playSynthesizedBeep = () => {
                 try {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    if (!AudioContext) return;
+                    const ctx = initAudioContext(); // Usa o contexto global inicializado
+                    if (!ctx) return;
                     
-                    const ctx = new AudioContext();
-                    
-                    const playTone = (freq, startTime, duration) => {
+                    const playTone = (freq, startTime, duration, type = 'sine') => {
                         const osc = ctx.createOscillator();
                         const gain = ctx.createGain();
                         
                         osc.connect(gain);
                         gain.connect(ctx.destination);
                         
-                        osc.type = 'sine';
+                        osc.type = type;
                         osc.frequency.value = freq;
                         
-                        gain.gain.setValueAtTime(0.1, startTime);
+                        gain.gain.setValueAtTime(0.3, startTime); // Volume um pouco mais alto
                         gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
                         
                         osc.start(startTime);
@@ -700,12 +734,13 @@
                     };
 
                     const now = ctx.currentTime;
-                    playTone(523.25, now, 0.3);       
-                    playTone(659.25, now + 0.15, 0.6); 
-                    playTone(523.25, now + 0.4, 0.3);  
+                    // Sequência de alerta "Ding-Dong-Ding"
+                    playTone(880, now, 0.2, 'triangle');        // A5
+                    playTone(587.33, now + 0.25, 0.4, 'sine');  // D5
+                    playTone(880, now + 0.7, 0.2, 'triangle');  // A5
                     
                 } catch (error) {
-                    console.error("Erro ao reproduzir som:", error);
+                    console.error("Erro fatal no áudio:", error);
                 }
             };
 
@@ -732,36 +767,54 @@
                 if (pending.length > 0) {
                     setPendingItems(pending);
                     setShowReminder(true);
-                    playNotificationSound(); // Toca o som de alerta
+                    playNotificationSound(); // Dispara o som imediatamente na abertura
                 }
             };
 
-            // --- Efeito de Notificação na Aba (Título Piscante) ---
+            // --- Efeito de Notificação: Aba Piscante e Som Repetitivo ---
             useEffect(() => {
-                let intervalId;
+                let titleIntervalId;
+                let soundIntervalId;
+
                 if (showReminder) {
                     let isAlert = true;
-                    // Faz o título da aba piscar para chamar atenção
-                    intervalId = setInterval(() => {
+                    
+                    // 1. Título Piscante na Aba (a cada 1 segundo)
+                    titleIntervalId = setInterval(() => {
                         document.title = isAlert ? `(${pendingItems.length}) 🔴 PAGAR AGORA!` : "🔔 Atenção - Despesas";
                         isAlert = !isAlert;
                     }, 1000);
+
+                    // 2. Som Repetitivo (a cada 15 segundos)
+                    soundIntervalId = setInterval(() => {
+                        playNotificationSound();
+                    }, 15000); // 15000 ms = 15 segundos
+
                 } else {
-                    // Restaura o título original
+                    // Restaura o título original quando o alerta fecha
                     document.title = "Relatório de Despesas Odoo";
                 }
 
+                // Limpeza ao fechar o alerta ou desmontar
                 return () => {
-                    clearInterval(intervalId);
+                    clearInterval(titleIntervalId);
+                    clearInterval(soundIntervalId);
                     document.title = "Relatório de Despesas Odoo";
                 };
             }, [showReminder, pendingItems]);
 
             useEffect(() => {
-                checkPendingPayments(); // Verifica ao abrir
+                // Pequeno delay inicial para garantir carregamento
+                const timer = setTimeout(() => {
+                    checkPendingPayments();
+                }, 2000);
+
                 const interval = setInterval(checkPendingPayments, 30 * 60 * 1000); // 30 minutos
-                return () => clearInterval(interval);
-            }, [calendarChecks]); // Re-verifica se calendarChecks mudar (para fechar se usuario pagar)
+                return () => {
+                    clearTimeout(timer);
+                    clearInterval(interval);
+                };
+            }, [calendarChecks]); // Re-verifica se calendarChecks mudar
 
             // --- Notification Helper ---
             const showToast = (message, type = 'success') => {
