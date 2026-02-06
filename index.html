@@ -662,6 +662,53 @@
                 };
             }, []);
 
+            // --- Helper de Som de Notificação ---
+            const playNotificationSound = () => {
+                // Tenta tocar o arquivo MP3 personalizado
+                const audio = new Audio('hey_listen.mp3');
+                
+                audio.play().catch((error) => {
+                    console.warn("Não foi possível tocar hey_listen.mp3, usando som padrão.", error);
+                    // Se der erro (ex: arquivo não encontrado), toca o som sintético original
+                    playSynthesizedBeep();
+                });
+            };
+
+            // Som Sintético (Backup caso o MP3 falhe)
+            const playSynthesizedBeep = () => {
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioContext) return;
+                    
+                    const ctx = new AudioContext();
+                    
+                    const playTone = (freq, startTime, duration) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        
+                        osc.type = 'sine';
+                        osc.frequency.value = freq;
+                        
+                        gain.gain.setValueAtTime(0.1, startTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                        
+                        osc.start(startTime);
+                        osc.stop(startTime + duration);
+                    };
+
+                    const now = ctx.currentTime;
+                    playTone(523.25, now, 0.3);       
+                    playTone(659.25, now + 0.15, 0.6); 
+                    playTone(523.25, now + 0.4, 0.3);  
+                    
+                } catch (error) {
+                    console.error("Erro ao reproduzir som:", error);
+                }
+            };
+
             // --- Reminder Logic (Verifica a cada 30min) ---
             const checkPendingPayments = () => {
                 const now = new Date();
@@ -685,6 +732,7 @@
                 if (pending.length > 0) {
                     setPendingItems(pending);
                     setShowReminder(true);
+                    playNotificationSound(); // Toca o som de alerta
                 }
             };
 
