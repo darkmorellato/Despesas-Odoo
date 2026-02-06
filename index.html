@@ -44,6 +44,12 @@
         /* Animações */
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .pulse-red { animation: pulseRed 2s infinite; }
+        @keyframes pulseRed { 
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } 
+        }
 
         /* --- CSS OTIMIZADO PARA IMPRESSÃO --- */
         @media print {
@@ -130,7 +136,8 @@
             ChevronLeft: (props) => <Icon {...props} path='<polyline points="15 18 9 12 15 6"></polyline>' />,
             ChevronRight: (props) => <Icon {...props} path='<polyline points="9 18 15 12 9 6"></polyline>' />,
             Clock: (props) => <Icon {...props} path='<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>' />,
-            CheckSquare: (props) => <Icon {...props} path='<polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>' />
+            CheckSquare: (props) => <Icon {...props} path='<polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>' />,
+            Bell: (props) => <Icon {...props} path='<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path>' />
         };
 
         // --- Dados Estáticos ---
@@ -247,9 +254,8 @@
         );
 
         // --- Componente de Calendário (Visualização + Checklist) ---
-        const ExpenseCalendar = ({ showToast }) => {
+        const ExpenseCalendar = ({ checkedState, onToggleCheck, showToast }) => {
             const [currentDate, setCurrentDate] = useState(new Date());
-            const [checkedState, setCheckedState] = useState({});
             
             // Modals State
             const [confirmPayModal, setConfirmPayModal] = useState({ open: false, desc: null });
@@ -271,19 +277,9 @@
 
             const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-            // Carregar estado dos checks do localStorage
-            useEffect(() => {
-                const savedChecks = localStorage.getItem('odoo_calendar_checks');
-                if (savedChecks) {
-                    setCheckedState(JSON.parse(savedChecks));
-                }
-            }, []);
-
             const setCheckStatus = (desc, status) => {
                 const key = `${year}-${month}-${desc}`;
-                const newState = { ...checkedState, [key]: status };
-                setCheckedState(newState);
-                localStorage.setItem('odoo_calendar_checks', JSON.stringify(newState));
+                onToggleCheck(key, status);
             };
 
             const initiatePayment = (desc) => {
@@ -392,14 +388,14 @@
                                             />
                                             <Icons.Check className="w-4 h-4 text-white absolute left-1 pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" />
                                          </div>
-                                         <div className={`flex-1 select-none ${isChecked ? "opacity-50" : ""}`} onClick={() => !isChecked && initiatePayment(item.description)}>
-                                             <p className={`font-bold text-sm ${isChecked ? "text-slate-500 line-through" : "text-slate-800 cursor-pointer"}`}>
+                                         <label htmlFor={`check-${idx}`} className={`flex-1 select-none ${isChecked ? "opacity-50" : ""}`} onClick={() => !isChecked && initiatePayment(item.description)}>
+                                             <p className={`font-bold text-base ${isChecked ? "text-slate-500 line-through" : "text-slate-800 cursor-pointer"}`}>
                                                  {item.description}
                                              </p>
-                                             <p className="text-xs text-slate-500 mt-0.5 font-medium flex items-center gap-1">
-                                                 <Icons.Calendar className="w-3 h-3" /> Dia {item.day}
+                                             <p className="text-sm text-slate-600 mt-1 font-bold flex items-center gap-1.5">
+                                                 <Icons.Calendar className="w-4 h-4 text-odoo-500" /> Dia {item.day}
                                              </p>
-                                         </div>
+                                         </label>
                                          {isChecked && (
                                              <div className="flex flex-col items-end gap-1">
                                                  <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full animate-in fade-in zoom-in">Pago</span>
@@ -467,9 +463,19 @@
             const [isSettingsOpen, setIsSettingsOpen] = useState(false);
             const [toasts, setToasts] = useState([]);
             const [searchTerm, setSearchTerm] = useState('');
-            const [groupBy, setGroupBy] = useState('date'); // 'date' ou 'store'
-            const [filterDate, setFilterDate] = useState(''); // State para o filtro de data
-            const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' or 'calendar'
+            const [groupBy, setGroupBy] = useState('date');
+            const [filterDate, setFilterDate] = useState('');
+            const [currentView, setCurrentView] = useState('dashboard');
+            
+            // Calendar Checklist State moved to App for reminder logic
+            const [calendarChecks, setCalendarChecks] = useState(() => {
+                const saved = localStorage.getItem('odoo_calendar_checks');
+                return saved ? JSON.parse(saved) : {};
+            });
+
+            // Reminder Modal State
+            const [showReminder, setShowReminder] = useState(false);
+            const [pendingItems, setPendingItems] = useState([]);
             
             // Ref for file input
             const fileInputRef = useRef(null);
@@ -505,6 +511,73 @@
 
             useEffect(() => { localStorage.setItem('odoo_fast_expenses', JSON.stringify(expenses)); }, [expenses]);
             useEffect(() => { localStorage.setItem('odoo_fast_settings', JSON.stringify(settings)); }, [settings]);
+            useEffect(() => { localStorage.setItem('odoo_calendar_checks', JSON.stringify(calendarChecks)); }, [calendarChecks]);
+
+            // --- Confirmação ao Fechar a Página ---
+            useEffect(() => {
+                const handleBeforeUnload = (e) => {
+                    // Texto do alerta (Navegadores modernos podem substituir por mensagem padrão do sistema)
+                    const message = "Atenção: Você efetuou todos os lançamentos do dia e enviou o relatório?";
+                    e.preventDefault();
+                    e.returnValue = message; // Exigido pelo Chrome/Edge
+                    return message;
+                };
+
+                window.addEventListener('beforeunload', handleBeforeUnload);
+
+                return () => {
+                    window.removeEventListener('beforeunload', handleBeforeUnload);
+                };
+            }, []);
+
+            // --- Reminder Logic (Verifica a cada 30min) ---
+            const checkPendingPayments = () => {
+                const now = new Date();
+                const day = now.getDate();
+                const month = now.getMonth();
+                const year = now.getFullYear();
+
+                const todaysTasks = FIXED_NOTIFICATIONS.filter(n => n.day === day);
+                
+                if (todaysTasks.length > 0) {
+                    const pending = todaysTasks.filter(task => {
+                        const key = `${year}-${month}-${task.description}`;
+                        return !calendarChecks[key];
+                    });
+
+                    if (pending.length > 0) {
+                        setPendingItems(pending);
+                        setShowReminder(true);
+                    }
+                }
+            };
+
+            // --- Efeito de Notificação na Aba (Título Piscante) ---
+            useEffect(() => {
+                let intervalId;
+                if (showReminder) {
+                    let isAlert = true;
+                    // Faz o título da aba piscar para chamar atenção
+                    intervalId = setInterval(() => {
+                        document.title = isAlert ? `(${pendingItems.length}) 🔴 PAGAR AGORA!` : "🔔 Atenção - Despesas";
+                        isAlert = !isAlert;
+                    }, 1000);
+                } else {
+                    // Restaura o título original
+                    document.title = "Relatório de Despesas Odoo";
+                }
+
+                return () => {
+                    clearInterval(intervalId);
+                    document.title = "Relatório de Despesas Odoo";
+                };
+            }, [showReminder, pendingItems]);
+
+            useEffect(() => {
+                checkPendingPayments(); // Verifica ao abrir
+                const interval = setInterval(checkPendingPayments, 30 * 60 * 1000); // 30 minutos
+                return () => clearInterval(interval);
+            }, [calendarChecks]); // Re-verifica se calendarChecks mudar (para fechar se usuario pagar)
 
             // --- Notification Helper ---
             const showToast = (message, type = 'success') => {
@@ -513,7 +586,11 @@
                 setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
             };
 
-            // --- Backup & Restore Handlers ---
+            // --- Handlers ---
+            const handleCalendarCheckToggle = (key, status) => {
+                setCalendarChecks(prev => ({ ...prev, [key]: status }));
+            };
+
             const handleBackup = async () => {
                 const dataStr = JSON.stringify(expenses, null, 2);
                 const fileName = `backup_despesas_${formatDateBR(getTodayLocal()).replace(/\//g, '-')}.json`;
@@ -636,7 +713,7 @@
                         amount: ent.v,
                         quantity: 1.0,
                         employeeName: settings.employeeName,
-                        originalTotal: entries.length > 1 ? totalVal : null // Salva o total original se houver divisão
+                        originalTotal: entries.length > 1 ? totalVal : null
                     }));
 
                     setExpenses(prev => [...newItems, ...prev]);
@@ -655,11 +732,10 @@
                 setNotes(ex.notes || '');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 showToast("Modo de edição ativado", "info");
-                if (currentView === 'calendar') setCurrentView('dashboard'); // Switch back to dashboard to edit
+                if (currentView === 'calendar') setCurrentView('dashboard');
             };
 
             const duplicateExpense = (ex) => {
-                // Preenche o formulário com os dados, mas sem ID de edição (cria um novo)
                 setDate(ex.date);
                 setDescription(ex.description);
                 setStore(ex.store);
@@ -676,7 +752,6 @@
                 showToast("Edição cancelada", "info");
             };
 
-            // --- Delete Handlers ---
             const confirmDeleteExpense = (id) => {
                 setDeleteModalState({ open: true, step: 1, id });
             };
@@ -706,7 +781,6 @@
                 }
             };
 
-            // --- Export ---
             const exportToCSV = () => {
                 if (expenses.length === 0) return showToast("Nada para exportar", "error");
                 
@@ -728,15 +802,11 @@
                 showToast("Arquivo CSV gerado!");
             };
 
-            // --- Calculations & Filtering ---
             const filteredExpenses = useMemo(() => {
                 let filtered = expenses;
-
-                // Filtro por Data Específica
                 if (filterDate) {
                     filtered = filtered.filter(ex => ex.date === filterDate);
                 }
-
                 if (searchTerm) {
                     const lowerSearch = searchTerm.toLowerCase();
                     filtered = filtered.filter(ex => 
@@ -746,7 +816,6 @@
                         ex.notes?.toLowerCase().includes(lowerSearch)
                     );
                 }
-                
                 return filtered;
             }, [expenses, searchTerm, filterDate]);
 
@@ -759,8 +828,8 @@
                 });
                 
                 const sortedKeys = Object.keys(groups).sort((a, b) => {
-                    if (groupBy === 'date') return b.localeCompare(a); // Descending for dates
-                    return a.localeCompare(b); // Ascending for stores
+                    if (groupBy === 'date') return b.localeCompare(a); 
+                    return a.localeCompare(b); 
                 });
 
                 return sortedKeys.map(key => ({
@@ -818,7 +887,11 @@
                         
                         {/* CONDITIONAL VIEW RENDERING */}
                         {currentView === 'calendar' ? (
-                            <ExpenseCalendar showToast={showToast} />
+                            <ExpenseCalendar 
+                                checkedState={calendarChecks} 
+                                onToggleCheck={handleCalendarCheckToggle} 
+                                showToast={showToast} 
+                            />
                         ) : (
                             <>
                                 {/* Dashboard Resumido */}
@@ -1100,6 +1173,48 @@
                             </>
                         )}
                     </div>
+
+                    {/* Modal de Lembrete Recorrente */}
+                    {showReminder && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in no-print">
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden pulse-red relative">
+                                <div className="p-6">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <Icons.Bell className="w-5 h-5 text-red-600" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-slate-800 leading-tight">Pagamentos Pendentes!</h3>
+                                    </div>
+                                    <p className="text-sm text-slate-600 mb-4">
+                                        Existem pagamentos fixos programados para hoje que ainda não foram confirmados:
+                                    </p>
+                                    <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 mb-6 max-h-40 overflow-y-auto">
+                                        <ul className="space-y-2">
+                                            {pendingItems.map((item, idx) => (
+                                                <li key={idx} className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                                                    <Icons.AlertCircle className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                                                    {item.description}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    
+                                    <button 
+                                        onClick={() => {
+                                            setShowReminder(false);
+                                            setCurrentView('calendar'); // Leva o usuário para o calendário
+                                        }} 
+                                        className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        Ir para Calendário e Pagar <Icons.ChevronRight className="w-4 h-4" />
+                                    </button>
+                                    <p className="text-[10px] text-center text-slate-400 mt-3">
+                                        Este alerta reaparecerá em 30 minutos se não for resolvido.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Modal Exclusão Unitária */}
                     {deleteModalState.open && (
