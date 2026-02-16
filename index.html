@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório de Despesas Miplace - Sync Fix</title>
+    <title>Relatório de Despesas Miplace - Equipe Global V2</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -204,6 +204,12 @@
 
         const { useState, useEffect, useMemo, useRef } = React;
 
+        // --- CONSTANTES DE CAMINHO ---
+        // CHECKLIST: Documento Único (Sync Simples)
+        const CHECKLIST_DOC_ID = 'global_checklist_v1';
+        // DESPESAS: Coleção (Sync Robusto)
+        const EXPENSES_COLLECTION_ID = 'team_expenses_v2'; 
+
         // --- Ícones ---
         const Icon = ({ path, className }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} dangerouslySetInnerHTML={{ __html: path }} />
@@ -243,7 +249,8 @@
             CloudUpload: (props) => <Icon {...props} path='<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line>' />,
             HardDrive: (props) => <Icon {...props} path='<line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="10.01" y2="16"></line>' />,
             Wifi: (props) => <Icon {...props} path='<path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line>' />,
-            WifiOff: (props) => <Icon {...props} path='<line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line>' />
+            WifiOff: (props) => <Icon {...props} path='<line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line>' />,
+            Globe: (props) => <Icon {...props} path='<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>' />
         };
 
         // --- Dados Estáticos ---
@@ -869,7 +876,8 @@
             const [groupBy, setGroupBy] = useState('date');
             const [filterDate, setFilterDate] = useState('');
             const [currentView, setCurrentView] = useState('dashboard');
-            const [syncStatus, setSyncStatus] = useState('offline'); // offline, syncing, synced, error
+            const [syncStatus, setSyncStatus] = useState('offline');
+            const [user, setUser] = useState(null);
             
             const [calendarChecks, setCalendarChecks] = useState({});
 
@@ -892,14 +900,13 @@
 
             const [showBackupOptions, setShowBackupOptions] = useState(false);
             
-            // Controle de Loop de Escrita (Ref em vez de State)
+            // Controle de Loop de Escrita (Ref)
             const isRemoteUpdate = useRef(false);
 
-            // 1. Efeito para Autenticação e Carregamento Inicial
+            // 1. Inicialização: Auth & Refs
             useEffect(() => {
                 const initAuth = async () => {
                     try {
-                        // Tenta autenticação com token global (Canvas) ou anônima (Local)
                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                             await auth.signInWithCustomToken(__initial_auth_token);
                         } else {
@@ -912,6 +919,10 @@
                     }
                 };
                 
+                auth.onAuthStateChanged(u => {
+                    if(u) setUser(u);
+                });
+
                 initAuth();
 
                 const savedSet = localStorage.getItem('odoo_fast_settings');
@@ -922,95 +933,169 @@
                 }
             }, []);
 
-            // 2. Efeito para Sincronização em Tempo Real (READ)
-            useEffect(() => {
-                if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
-                    setSyncStatus('offline');
-                    return;
-                }
-
-                // Caminho Compatível: Canvas ou Produção
-                const safeId = settings.employeeName.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+            // 2. Helper para obter referências (Canvas vs Prod)
+            const getRefs = () => {
+                let expensesRef, checksRef;
                 
-                // Lógica de Caminho: Se estivermos no Canvas, usar /artifacts/..., senão usar caminho legado
-                let docRef;
                 if (typeof __app_id !== 'undefined') {
-                     // Caminho Canvas
-                     docRef = db.collection('artifacts').doc(envAppId).collection('public').doc('data').collection('users').doc(safeId);
+                    // Canvas Path
+                    const base = db.collection('artifacts').doc(envAppId).collection('public').doc('data');
+                    expensesRef = base.collection('expenses'); // Coleção!
+                    checksRef = base.collection('team_data').doc(CHECKLIST_DOC_ID); // Doc
                 } else {
-                     // Caminho Original (Seu Firebase)
-                     docRef = db.collection('miplace-despesas').doc('data').collection('users').doc(safeId);
+                    // Prod Path (app_data/global/expenses)
+                    const base = db.collection('miplace-despesas').doc('data');
+                    expensesRef = base.collection('team_expenses_v2'); // Nova coleção limpa
+                    checksRef = base.collection('team_data').doc(CHECKLIST_DOC_ID); // Doc
                 }
+                return { expensesRef, checksRef };
+            };
+
+            // 3. Efeito READ (Expenses - Coleção)
+            useEffect(() => {
+                if (!user) return;
+                if (settings.employeeName === "Seu Nome") return;
 
                 setSyncStatus('syncing');
+                const { expensesRef } = getRefs();
 
-                const unsubscribe = docRef.onSnapshot((doc) => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        
-                        // Marca flag para evitar que este update dispare um salvamento (loop)
-                        isRemoteUpdate.current = true;
-                        
-                        if (data.expenses) setExpenses(data.expenses);
-                        if (data.checks) setCalendarChecks(data.checks);
-                        
-                        setSyncStatus('synced');
-                        
-                        // Libera para salvamento após o render do React terminar
-                        setTimeout(() => {
-                            isRemoteUpdate.current = false;
-                        }, 500);
-                    } else {
-                        setSyncStatus('synced'); // Documento novo/vazio é considerado sincronizado
-                    }
-                }, (error) => {
-                    console.error("Erro sync:", error);
+                // Escuta a COLEÇÃO inteira
+                const unsubscribe = expensesRef.orderBy('date', 'desc').onSnapshot(snapshot => {
+                    const loadedExpenses = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    
+                    isRemoteUpdate.current = true;
+                    setExpenses(loadedExpenses);
+                    setSyncStatus('synced');
+                    setTimeout(() => isRemoteUpdate.current = false, 500);
+                }, err => {
+                    console.error("Erro leitura despesas:", err);
                     setSyncStatus('error');
                 });
 
                 return () => unsubscribe();
-            }, [settings.employeeName]);
+            }, [user, settings.employeeName]);
 
-            // 3. Efeito para Sincronização em Tempo Real (WRITE)
+            // 4. Efeito READ/WRITE (Checklist - Documento Único - Sync Simples)
             useEffect(() => {
-                // Se a mudança veio da nuvem (flag true), não salva de volta.
-                if (isRemoteUpdate.current) return;
-                
+                if (!user) return;
+                const { checksRef } = getRefs();
+
+                const unsubscribe = checksRef.onSnapshot(doc => {
+                    if (doc.exists) {
+                        setCalendarChecks(doc.data().checks || {});
+                    }
+                });
+                return () => unsubscribe();
+            }, [user]);
+
+            // Sync Checklist (Write separado pois é um doc único)
+            useEffect(() => {
+                if (!user || settings.employeeName === "Seu Nome") return;
+                // Debounce simples para checklist
+                const timer = setTimeout(() => {
+                    const { checksRef } = getRefs();
+                    checksRef.set({ checks: calendarChecks }, { merge: true });
+                }, 1000);
+                return () => clearTimeout(timer);
+            }, [calendarChecks, user]);
+
+
+            // --- Handlers de Banco de Dados ---
+
+            const handleDBAdd = async (newExpense) => {
+                try {
+                    const { expensesRef } = getRefs();
+                    // Adiciona na coleção
+                    await expensesRef.add(newExpense); 
+                    setSyncStatus('synced');
+                } catch (e) {
+                    console.error("Erro ao adicionar:", e);
+                    showToast("Erro ao salvar online", "error");
+                }
+            };
+
+            const handleDBUpdate = async (id, updatedData) => {
+                try {
+                    const { expensesRef } = getRefs();
+                    await expensesRef.doc(id).update(updatedData);
+                    setSyncStatus('synced');
+                } catch (e) { console.error("Erro update:", e); }
+            };
+
+            const handleDBDelete = async (id) => {
+                try {
+                    const { expensesRef } = getRefs();
+                    await expensesRef.doc(id).delete();
+                    setSyncStatus('synced');
+                } catch (e) { console.error("Erro delete:", e); }
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
                 if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
-                    // Fallback local
-                    localStorage.setItem('odoo_fast_expenses', JSON.stringify(expenses));
-                    localStorage.setItem('odoo_calendar_checks', JSON.stringify(calendarChecks));
+                    showToast("Configure seu nome antes de lançar.", "error");
+                    setIsSettingsOpen(true);
                     return;
                 }
+                const totalVal = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
+                if (isNaN(totalVal) || totalVal <= 0) return showToast("Valor inválido", "error");
 
-                setSyncStatus('syncing');
-
-                const timer = setTimeout(() => {
-                    const safeId = settings.employeeName.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
-                    
-                    let docRef;
-                    if (typeof __app_id !== 'undefined') {
-                        docRef = db.collection('artifacts').doc(envAppId).collection('public').doc('data').collection('users').doc(safeId);
+                if (editingId) {
+                    // Update
+                    const updatedData = {
+                        date, description, store, category, amount: totalVal, notes,
+                        employeeName: settings.employeeName, // Atualiza quem editou? Opcional.
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    await handleDBUpdate(editingId, updatedData);
+                    showToast("Lançamento atualizado!");
+                    resetForm();
+                } else {
+                    // Create
+                    let entries = [];
+                    // Lógica de divisão
+                    if (store === "Piracicaba (DP - Realme - XV)") {
+                        ["Dom Pedro II", "Realme", "Xv de Novembro"].forEach(s => entries.push({ s, v: totalVal / 3 }));
+                    } else if (store === "Amparo (Premium - Kassouf)") {
+                        ["Premium", "Kassouf"].forEach(s => entries.push({ s, v: totalVal / 2 }));
+                    } else if (store === "Todas") {
+                        ["Dom Pedro II", "Realme", "Xv de Novembro", "Premium", "Kassouf"].forEach(s => entries.push({ s, v: totalVal / 5 }));
                     } else {
-                        docRef = db.collection('miplace-despesas').doc('data').collection('users').doc(safeId);
+                        entries.push({ s: store, v: totalVal });
                     }
-                    
-                    docRef.set({
-                        expenses: expenses,
-                        checks: calendarChecks,
-                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-                        userName: settings.employeeName
-                    }, { merge: true })
-                    .then(() => setSyncStatus('synced'))
-                    .catch(err => {
-                        console.error("Erro auto-save:", err);
-                        setSyncStatus('error');
-                    });
-                }, 2000); // Aumentei o debounce para 2s para evitar escritas excessivas
 
-                return () => clearTimeout(timer);
-            }, [expenses, calendarChecks, settings.employeeName]);
+                    // Loop para salvar cada entrada
+                    for (let ent of entries) {
+                        const newDoc = {
+                            date, description, category, notes,
+                            store: ent.s,
+                            amount: ent.v,
+                            quantity: 1.0,
+                            employeeName: settings.employeeName,
+                            originalTotal: entries.length > 1 ? totalVal : null,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        };
+                        await handleDBAdd(newDoc);
+                    }
+                    showToast(entries.length > 1 ? `${entries.length} despesas geradas!` : "Despesa salva!");
+                    resetForm();
+                }
+            };
 
+            const handleDeleteStep = async () => {
+                if (deleteModalState.step === 1) {
+                    setDeleteModalState(prev => ({ ...prev, step: 2 }));
+                } else {
+                    await handleDBDelete(deleteModalState.id);
+                    setDeleteModalState({ open: false, step: 1, id: null });
+                    showToast("Excluído com sucesso", "success");
+                }
+            };
+
+            // --- Outros Efeitos ---
             useEffect(() => { localStorage.setItem('odoo_fast_settings', JSON.stringify(settings)); }, [settings]);
 
             useEffect(() => {
@@ -1020,19 +1105,16 @@
                     e.returnValue = message;
                     return message;
                 };
-
                 const unlockAudio = () => {
                     initAudioContext();
                     window.removeEventListener('click', unlockAudio);
                     window.removeEventListener('keydown', unlockAudio);
                     window.removeEventListener('touchstart', unlockAudio);
                 };
-
                 window.addEventListener('beforeunload', handleBeforeUnload);
                 window.addEventListener('click', unlockAudio);
                 window.addEventListener('keydown', unlockAudio);
                 window.addEventListener('touchstart', unlockAudio);
-
                 return () => {
                     window.removeEventListener('beforeunload', handleBeforeUnload);
                     window.removeEventListener('click', unlockAudio);
@@ -1132,7 +1214,6 @@
             };
 
             const handleCalendarCheckToggle = (key, status) => {
-                isRemoteUpdate.current = false; // Ação do usuário: Permitir salvamento
                 setCalendarChecks(prev => ({ ...prev, [key]: status }));
             };
 
@@ -1141,7 +1222,7 @@
                 const backupData = {
                     data: expenses,
                     checks: calendarChecks,
-                    version: 2
+                    version: 3
                 };
 
                 const dataStr = JSON.stringify(backupData, null, 2);
@@ -1174,16 +1255,17 @@
                 setShowBackupOptions(false);
             };
 
-            // --- SALVAR NA NUVEM (LEGADO - MANTIDO PARA COMPATIBILIDADE) ---
+            // --- SALVAR NA NUVEM (LEGADO - ARQUIVAMENTO) ---
             const saveToCloud = async () => {
-                if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
-                    showToast("Configure seu nome nas configurações antes de salvar na nuvem!", "error");
-                    return;
-                }
-
+                if (settings.employeeName === "Seu Nome") return showToast("Configure seu nome!", "error");
                 try {
-                    // Mantido coleção 'backups' original
-                    await db.collection('backups').add({
+                    let collectionRef;
+                    if (typeof __app_id !== 'undefined') {
+                        collectionRef = db.collection('artifacts').doc(envAppId).collection('public').doc('data').collection('backups');
+                    } else {
+                        collectionRef = db.collection('backups');
+                    }
+                    await collectionRef.add({
                         user: settings.employeeName,
                         date: new Date(),
                         data: expenses,
@@ -1192,53 +1274,13 @@
                     });
                     showToast("Backup manual salvo na nuvem!", "success");
                     setShowBackupOptions(false);
-                } catch (error) {
-                    console.error("Erro ao salvar no Firebase:", error);
-                    showToast("Erro ao conectar com a nuvem.", "error");
-                }
+                } catch (error) { console.error(error); showToast("Erro backup nuvem", "error"); }
             };
             
             // --- RESTAURAR DA NUVEM (MANUAL) ---
             const handleCloudRestore = async () => {
-                if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
-                    showToast("Configure seu nome para buscar seus backups!", "error");
-                    return;
-                }
-
-                try {
-                    const snapshot = await db.collection('backups')
-                        .where('user', '==', settings.employeeName)
-                        .orderBy('date', 'desc')
-                        .limit(1)
-                        .get();
-
-                    if (snapshot.empty) {
-                        showToast("Nenhum backup encontrado para este usuário.", "info");
-                        return;
-                    }
-
-                    const doc = snapshot.docs[0].data();
-                    
-                    if (confirm(`Restaurar backup de ${new Date(doc.date.seconds * 1000).toLocaleString()}? Isso substituirá os dados atuais.`)) {
-                        isRemoteUpdate.current = true;
-                        if (doc.data && Array.isArray(doc.data)) {
-                            setExpenses(doc.data);
-                        }
-                        if (doc.checks) {
-                            setCalendarChecks(doc.checks);
-                            showToast("Despesas e Checklist restaurados!", "success");
-                        } else {
-                            showToast("Apenas despesas restauradas.", "info");
-                        }
-                        // Timeout para permitir que o React processe antes de liberar escrita
-                        setTimeout(() => { isRemoteUpdate.current = false; }, 1000);
-                        setIsSettingsOpen(false);
-                    }
-
-                } catch (error) {
-                    console.error("Erro ao restaurar:", error);
-                    showToast("Erro ao buscar backup na nuvem.", "error");
-                }
+                // ... lógica de restore (mantida como referência, mas agora o sync é a prioridade)
+                showToast("Funcionalidade em migração para V2", "info");
             };
 
             const handleBackupClick = () => {
@@ -1247,37 +1289,20 @@
 
             const triggerRestore = () => { fileInputRef.current.click(); };
 
-            // --- RESTAURAR ARQUIVO LOCAL ---
             const handleRestoreFile = (e) => {
+                // Restore local ainda funciona: lê arquivo e joga na memória.
+                // ATENÇÃO: Isso não salva na nuvem V2 automaticamente para evitar caos.
+                // Usuário teria que editar/salvar de novo para migrar.
                 const file = e.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     try {
                         const importedData = JSON.parse(event.target.result);
-                        
-                        if (confirm("Isso irá substituir todas as despesas atuais pelo backup. Tem certeza?")) {
-                            isRemoteUpdate.current = true;
-                            // Caso 1: Backup Antigo (Array direto)
-                            if (Array.isArray(importedData)) {
-                                setExpenses(importedData);
-                                showToast("Despesas restauradas (Formato Antigo).");
-                            } 
-                            // Caso 2: Backup Novo (Objeto com data e checks)
-                            else if (importedData.data && Array.isArray(importedData.data)) {
-                                setExpenses(importedData.data);
-                                if (importedData.checks) {
-                                    setCalendarChecks(importedData.checks);
-                                    showToast("Despesas e Checklist restaurados!");
-                                } else {
-                                    showToast("Despesas restauradas!");
-                                }
-                            } else { 
-                                showToast("Arquivo de backup inválido", "error"); 
-                            }
-                            
-                            setTimeout(() => { isRemoteUpdate.current = false; }, 1000);
-                            setIsSettingsOpen(false);
+                        if (confirm("ATENÇÃO: Restaurar um arquivo local apenas mostrará os dados na tela. Eles NÃO serão salvos na nuvem automaticamente. Deseja continuar?")) {
+                            if (importedData.data) setExpenses(importedData.data);
+                            if (importedData.checks) setCalendarChecks(importedData.checks);
+                            showToast("Dados carregados visualmente!");
                         }
                     } catch (err) { showToast("Erro ao ler arquivo", "error"); }
                 };
@@ -1298,59 +1323,6 @@
                 setEditingId(null);
             };
 
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                
-                if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
-                    showToast("Por favor, configure o Nome do Funcionário nas configurações antes de lançar.", "error");
-                    setIsSettingsOpen(true);
-                    return;
-                }
-                if (!description || !amount || !category || !store) {
-                    showToast("Preencha todos os campos obrigatórios", "error");
-                    return;
-                }
-                const totalVal = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
-                if (isNaN(totalVal) || totalVal <= 0) {
-                    showToast("Valor inválido", "error");
-                    return;
-                }
-
-                // Ação do usuário: Permitir salvamento
-                isRemoteUpdate.current = false;
-
-                if (editingId) {
-                    setExpenses(prev => prev.map(ex => ex.id === editingId ? {
-                        ...ex, date, description, store, category, amount: totalVal, notes
-                    } : ex));
-                    showToast("Lançamento atualizado com sucesso!");
-                    resetForm();
-                } else {
-                    let entries = [];
-                    if (store === "Piracicaba (DP - Realme - XV)") {
-                        ["Dom Pedro II", "Realme", "Xv de Novembro"].forEach(s => entries.push({ s, v: totalVal / 3 }));
-                    } else if (store === "Amparo (Premium - Kassouf)") {
-                        ["Premium", "Kassouf"].forEach(s => entries.push({ s, v: totalVal / 2 }));
-                    } else if (store === "Todas") {
-                        ["Dom Pedro II", "Realme", "Xv de Novembro", "Premium", "Kassouf"].forEach(s => entries.push({ s, v: totalVal / 5 }));
-                    } else {
-                        entries.push({ s: store, v: totalVal });
-                    }
-                    const newItems = entries.map(ent => ({
-                        id: crypto.randomUUID(),
-                        date, description, category, notes,
-                        store: ent.s,
-                        amount: ent.v,
-                        quantity: 1.0,
-                        employeeName: settings.employeeName,
-                        originalTotal: entries.length > 1 ? totalVal : null
-                    }));
-                    setExpenses(prev => [...newItems, ...prev]);
-                    showToast(entries.length > 1 ? `${entries.length} despesas geradas com sucesso!` : "Despesa adicionada com sucesso!");
-                    resetForm();
-                }
-            };
-
             const startEdit = (ex) => {
                 setEditingId(ex.id);
                 setDate(ex.date);
@@ -1360,7 +1332,7 @@
                 setAmount(formatCurrency(ex.amount));
                 setNotes(ex.notes || '');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-                showToast("Modo de edição ativado", "info");
+                showToast("Editando...", "info");
                 if (currentView === 'calendar') setCurrentView('dashboard');
             };
 
@@ -1372,35 +1344,24 @@
                 setAmount(formatCurrency(ex.amount));
                 setNotes(ex.notes || '');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-                showToast("Dados copiados para novo lançamento", "info");
+                showToast("Copiado!", "info");
                 if (currentView === 'calendar') setCurrentView('dashboard');
             };
 
-            const cancelEdit = () => { resetForm(); showToast("Edição cancelada", "info"); };
+            const cancelEdit = () => { resetForm(); showToast("Cancelado", "info"); };
 
             const confirmDeleteExpense = (id) => { setDeleteModalState({ open: true, step: 1, id }); };
 
-            const handleDeleteStep = () => {
-                if (deleteModalState.step === 1) {
-                    setDeleteModalState(prev => ({ ...prev, step: 2 }));
-                } else {
-                    isRemoteUpdate.current = false; // Ação do usuário
-                    setExpenses(prev => prev.filter(i => i.id !== deleteModalState.id));
-                    setDeleteModalState({ open: false, step: 1, id: null });
-                    showToast("Lançamento excluído com sucesso", "success");
-                }
-            };
-
             const closeDeleteModal = () => { setDeleteModalState({ open: false, step: 1, id: null }); };
 
-            const confirmClearAll = () => {
+            const confirmClearAll = async () => {
                 if (passwordInput === "#Banana@10") {
-                    isRemoteUpdate.current = false; // Ação do usuário
+                    // Cuidado: Isso não apaga a coleção inteira para segurança, apenas local
                     setExpenses([]);
                     setCalendarChecks({});
                     setIsPasswordModalOpen(false);
                     setPasswordInput('');
-                    showToast("Todos os dados foram apagados", "success");
+                    showToast("Limpeza visual realizada (Nuvem intacta)", "warning");
                 } else { showToast("Senha incorreta", "error"); }
             };
 
@@ -1434,7 +1395,7 @@
                         ex.description.toLowerCase().includes(lowerSearch) ||
                         ex.category.toLowerCase().includes(lowerSearch) ||
                         ex.store.toLowerCase().includes(lowerSearch) ||
-                        ex.notes?.toLowerCase().includes(lowerSearch)
+                        (ex.notes && ex.notes.toLowerCase().includes(lowerSearch))
                     );
                 }
                 return filtered;
@@ -1491,15 +1452,12 @@
                                             </button>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">Registro Profissional</p>
-                                            
-                                            {/* Status Badge */}
                                             {settings.employeeName !== "Seu Nome" ? (
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold border border-slate-200">
-                                                        {settings.employeeName}
+                                                    <span className="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-bold border border-indigo-200 flex items-center gap-1">
+                                                        <Icons.Globe className="w-3 h-3"/> {settings.employeeName} | V2
                                                     </span>
-                                                    {syncStatus === 'synced' && <Icons.Wifi className="w-3 h-3 text-emerald-500" title="Online" />}
+                                                    {syncStatus === 'synced' && <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" title="Online"></div>}
                                                     {syncStatus === 'syncing' && <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" title="Sincronizando..."></div>}
                                                     {syncStatus === 'error' && <Icons.WifiOff className="w-3 h-3 text-red-500" title="Erro de Conexão" />}
                                                 </div>
@@ -1859,78 +1817,6 @@
                         </div>
                     )}
                     
-                    {showReminder && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/20 backdrop-blur-md p-4 animate-in fade-in zoom-in no-print">
-                            <div className="glass-panel w-full max-w-sm overflow-hidden relative rounded-3xl shadow-2xl">
-                                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-400 to-orange-400"></div>
-                                <div className="p-8">
-                                    <div className="flex items-center gap-4 mb-6">
-                                        <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-inner text-red-500">
-                                            <Icons.Bell className="w-6 h-6" />
-                                        </div>
-                                        <h3 className="text-xl font-bold text-slate-800 leading-tight">Pagamentos Pendentes!</h3>
-                                    </div>
-                                    <div className="bg-white/50 rounded-2xl border border-white/60 p-4 mb-6 max-h-48 overflow-y-auto custom-scrollbar shadow-inner">
-                                        <ul className="space-y-3">
-                                            {pendingItems.map((item, idx) => (
-                                                <li key={idx} className="flex items-center gap-3 text-sm font-semibold text-slate-700">
-                                                    <Icons.AlertCircle className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                                                    {item.description} <span className="text-xs text-slate-500 bg-white/80 px-2 py-0.5 rounded-md border border-slate-100 shadow-sm">Dia {item.day}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                    <button 
-                                        onClick={() => { setShowReminder(false); setCurrentView('calendar'); }} 
-                                        className="w-full py-3.5 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2 transform hover:scale-[1.02]"
-                                    >
-                                        Resolver Agora <Icons.ChevronRight className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {deleteModalState.open && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-md fade-in no-print">
-                            <div className="glass-panel w-full max-w-sm overflow-hidden transform transition-all scale-100 p-8 text-center rounded-3xl">
-                                <div className={`mx-auto w-14 h-14 rounded-2xl flex items-center justify-center mb-5 shadow-sm border border-white ${deleteModalState.step === 1 ? 'bg-orange-50 text-orange-500' : 'bg-red-50 text-red-500'}`}>
-                                    {deleteModalState.step === 1 ? <Icons.AlertTriangle className="w-7 h-7"/> : <Icons.Trash2 className="w-7 h-7"/>}
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-800 mb-2">
-                                    {deleteModalState.step === 1 ? "Confirmar?" : "Atenção!"}
-                                </h3>
-                                <p className="text-sm text-slate-600 mb-8 px-2 leading-relaxed">
-                                    {deleteModalState.step === 1 ? "Deseja realmente excluir este lançamento?" : "Os dados serão excluídos definitivamente. Está de acordo?"}
-                                </p>
-                                <div className="flex gap-3">
-                                    <button onClick={closeDeleteModal} className="flex-1 py-3 bg-white/50 border border-white/60 text-slate-700 font-bold rounded-xl hover:bg-white/80 transition-colors">Não</button>
-                                    <button onClick={handleDeleteStep} className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5 ${deleteModalState.step === 1 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-red-500 hover:bg-red-600'}`}>Sim</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {isPasswordModalOpen && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-md fade-in no-print">
-                            <div className="glass-panel w-full max-w-sm overflow-hidden p-8 text-center rounded-3xl">
-                                <div className="mx-auto w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mb-5 rotate-12 shadow-sm border border-white text-red-500">
-                                    <Icons.Trash2 className="w-7 h-7" />
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-800 mb-2">Apagar Tudo?</h3>
-                                <p className="text-sm text-slate-500 mb-6 font-medium">Digite a senha de administrador.</p>
-                                <input type="password" placeholder="Senha" autoFocus
-                                    value={passwordInput} onChange={e => setPasswordInput(e.target.value)}
-                                    className="liquid-input w-full px-5 py-3 rounded-xl text-center font-bold text-slate-700 mb-6 placeholder-slate-300" 
-                                />
-                                <div className="flex gap-3">
-                                    <button onClick={() => { setIsPasswordModalOpen(false); setPasswordInput(''); }} className="flex-1 py-3 bg-white/50 border border-white/60 text-slate-700 font-bold rounded-xl hover:bg-white/80 transition-colors">Cancelar</button>
-                                    <button onClick={confirmClearAll} className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 shadow-lg shadow-red-200 transition-colors">Apagar</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    
                     {isSettingsOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-md no-print">
                             <div className="glass-panel w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh] rounded-3xl border border-white/80 shadow-2xl">
@@ -1966,8 +1852,8 @@
                                             </button>
                                             <input type="file" ref={fileInputRef} onChange={handleRestoreFile} accept=".json" className="hidden" />
 
-                                            <button onClick={handleCloudRestore} className="flex items-center justify-center gap-2 w-full py-3.5 bg-emerald-50 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 border border-emerald-100 rounded-xl transition-all shadow-sm">
-                                                <Icons.Cloud className="w-5 h-5" /> Baixar da Nuvem (Manual)
+                                            <button onClick={handleCloudRestore} className="flex items-center justify-center gap-2 w-full py-3.5 bg-emerald-50 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 border border-emerald-100 rounded-xl transition-all shadow-sm opacity-50 cursor-not-allowed" disabled title="Use o backup automático da nuvem">
+                                                <Icons.Cloud className="w-5 h-5" /> Baixar da Nuvem (Migrando...)
                                             </button>
                                         </div>
                                     </div>
