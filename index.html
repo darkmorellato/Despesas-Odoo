@@ -248,7 +248,7 @@
             HardDrive: (props) => <Icon {...props} path='<line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="10.01" y2="16"></line>' />,
             Wifi: (props) => <Icon {...props} path='<path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line>' />,
             WifiOff: (props) => <Icon {...props} path='<line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line>' />,
-            Globe: (props) => <Icon {...props} path='<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>' />
+            Globe: (props) => <Icon {...props} path='<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>' />
         };
 
         const CATEGORIES_LIST = [
@@ -439,11 +439,18 @@
             </div>
         );
 
-        // --- NOVO: ALERTA VISUAL DE PAGAMENTOS ---
-        const PendingPaymentsAlert = ({ items, onClick }) => {
+        // --- NOVO: ALERTA VISUAL DE PAGAMENTOS COM BOTÃO FECHAR ---
+        const PendingPaymentsAlert = ({ items, onClick, onClose }) => {
             if (!items || items.length === 0) return null;
             return (
-                <div onClick={onClick} className="fixed bottom-24 left-6 z-[80] glass-panel p-4 rounded-2xl shadow-2xl border-l-4 border-l-red-500 max-w-xs cursor-pointer hover:scale-105 transition-transform alert-slide-up bg-white/90">
+                <div onClick={onClick} className="fixed bottom-24 left-6 z-[80] glass-panel p-4 rounded-2xl shadow-2xl border-l-4 border-l-red-500 max-w-xs cursor-pointer hover:scale-105 transition-transform alert-slide-up bg-white/90 group">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onClose(); }}
+                        className="absolute -top-2 -right-2 bg-slate-200 text-slate-500 rounded-full p-1 shadow-md hover:bg-red-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                        title="Fechar Alerta"
+                    >
+                        <Icons.X className="w-3 h-3" />
+                    </button>
                     <div className="flex items-start gap-3">
                         <div className="bg-red-100 text-red-500 p-2 rounded-full animate-pulse">
                             <Icons.AlertTriangle className="w-6 h-6" />
@@ -696,7 +703,7 @@
                             <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg shadow-sm text-blue-600"><Icons.CheckSquare className="w-5 h-5"/></div>
                             Pagamentos Fixos de {monthNames[month]}
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {FIXED_NOTIFICATIONS
                                 .filter(item => !item.months || item.months.includes(month))
                                 .map((item, idx) => {
@@ -1437,6 +1444,7 @@
                         <PendingPaymentsAlert 
                             items={pendingItems} 
                             onClick={() => setCurrentView('calendar')} 
+                            onClose={() => setShowReminder(false)}
                         />
                     )}
 
@@ -1628,9 +1636,6 @@
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-4 w-full md:w-auto no-print">
-                                                    <button onClick={() => setIsPasswordModalOpen(true)} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-5 py-3 bg-white/40 hover:bg-red-50 border border-white/60 hover:border-red-200 rounded-xl text-slate-500 hover:text-red-500 font-bold transition-all shadow-sm">
-                                                        <Icons.Trash2 className="w-4 h-4" /> Limpar
-                                                    </button>
                                                     <button onClick={() => window.print()} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-5 py-3 bg-white/60 hover:bg-white border border-white/80 rounded-xl text-slate-600 font-bold transition-all shadow-sm">
                                                         <Icons.Printer className="w-4 h-4" /> Imprimir
                                                     </button>
@@ -1767,9 +1772,6 @@
                                                                                     <button onClick={() => startEdit(ex)} className="p-1.5 text-slate-400 hover:text-orange-500 bg-white/50 hover:bg-white border border-transparent hover:border-orange-100 rounded-lg transition-all shadow-sm" title="Editar">
                                                                                         <Icons.Edit className="w-4 h-4" />
                                                                                     </button>
-                                                                                    <button onClick={() => confirmDeleteExpense(ex.id)} className="p-1.5 text-slate-400 hover:text-red-500 bg-white/50 hover:bg-white border border-transparent hover:border-red-100 rounded-lg transition-all shadow-sm" title="Excluir">
-                                                                                        <Icons.Trash2 className="w-4 h-4" />
-                                                                                    </button>
                                                                                 </div>
                                                                             </td>
                                                                         </tr>
@@ -1792,7 +1794,7 @@
                                             onClick={handleEmptyStateRestore} 
                                             className="mt-6 px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl shadow-lg transition-all flex items-center gap-2 animate-pulse"
                                         >
-                                            <Icons.CloudUpload className="w-5 h-5" /> Carregar Backup do PC (Nuvem)
+                                            <Icons.CloudUpload className="w-5 h-5" /> Importar Backup do PC
                                         </button>
                                     </div>
                                 )}
@@ -1868,10 +1870,6 @@
                                                 <Icons.Upload className="w-5 h-5" /> Restaurar Arquivo (PC)
                                             </button>
                                             <input type="file" ref={fileInputRef} onChange={handleRestoreFile} accept=".json" className="hidden" />
-
-                                            <button onClick={handleCloudRestore} className="flex items-center justify-center gap-2 w-full py-3.5 bg-emerald-50 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 border border-emerald-100 rounded-xl transition-all shadow-sm opacity-50 cursor-not-allowed" disabled title="Use o backup automático da nuvem">
-                                                <Icons.Cloud className="w-5 h-5" /> Baixar da Nuvem (Migrando...)
-                                            </button>
                                         </div>
                                     </div>
                                 </div>
