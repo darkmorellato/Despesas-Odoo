@@ -44,8 +44,10 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- FIREBASE COMPAT LIBRARIES (Versão Estável 10.13.0) -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 
     <style>
         body { 
@@ -174,7 +176,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // --- CONFIGURAÇÃO FIREBASE ---
+        // --- CONFIGURAÇÃO FIREBASE CORRIGIDA ---
         const firebaseConfig = {
             apiKey: "AIzaSyBTKRckW0phSEPoDNBwpSeb6rconsokbpI",
             authDomain: "miplace-despesas.firebaseapp.com",
@@ -185,10 +187,13 @@
             measurementId: "G-Z33RRM8XPD"
         };
         
+        // Inicialização
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
+        
         const db = firebase.firestore();
+        const auth = firebase.auth();
 
         const { useState, useEffect, useMemo, useRef } = React;
 
@@ -477,7 +482,7 @@
             };
 
             const initiatePayment = (desc, e) => {
-                if (e) setModalPosition({ x: e.clientX, y: e.clientY });
+                // Removemos o cálculo de posição, agora é centralizado via CSS
                 setConfirmPayModal({ open: true, desc });
             };
 
@@ -670,17 +675,12 @@
                         </div>
                     </div>
 
-                    {/* Modais */}
+                    {/* Modal Centralizado Corrigido */}
                     {confirmPayModal.open && (
-                        <>
-                            <div className="fixed inset-0 z-[70] cursor-default bg-slate-900/10 backdrop-blur-sm" onClick={() => setConfirmPayModal({open:false, desc:null})}></div>
-                            <div 
-                                className="fixed z-[80] glass-panel rounded-2xl p-6 text-center animate-in fade-in zoom-in duration-200 w-72"
-                                style={{ 
-                                    top: modalPosition.y, 
-                                    left: '50%', // Ajuste: agora centralizado na tela horizontalmente
-                                    transform: 'translate(-50%, -50%)'
-                                }}
+                        <div className="fixed inset-0 z-[70] flex items-center justify-center cursor-default bg-slate-900/10 backdrop-blur-sm" onClick={() => setConfirmPayModal({open:false, desc:null})}>
+                             <div 
+                                onClick={e => e.stopPropagation()}
+                                className="glass-panel rounded-2xl p-6 text-center animate-in fade-in zoom-in duration-200 w-72 shadow-2xl"
                             >
                                 <div className="mx-auto w-12 h-12 bg-blue-50/80 rounded-full flex items-center justify-center mb-4 shadow-inner text-blue-500">
                                     <Icons.Check className="w-6 h-6" />
@@ -692,7 +692,7 @@
                                     <button onClick={confirmPayment} className="flex-1 py-2.5 liquid-btn-primary rounded-xl font-bold text-xs">Sim</button>
                                 </div>
                             </div>
-                        </>
+                        </div>
                     )}
 
                     {fixModal.open && (
@@ -862,10 +862,7 @@
             const [filterDate, setFilterDate] = useState('');
             const [currentView, setCurrentView] = useState('dashboard');
             
-            const [calendarChecks, setCalendarChecks] = useState(() => {
-                const saved = localStorage.getItem('odoo_calendar_checks');
-                return saved ? JSON.parse(saved) : {};
-            });
+            const [calendarChecks, setCalendarChecks] = useState({});
 
             const [showReminder, setShowReminder] = useState(false);
             const [pendingItems, setPendingItems] = useState([]);
@@ -885,10 +882,16 @@
             const [notes, setNotes] = useState('');
 
             const [showBackupOptions, setShowBackupOptions] = useState(false);
+            
+            // Estado para controlar delay de escrita no Firebase
+            const [isRemoteUpdate, setIsRemoteUpdate] = useState(false);
 
+            // 1. Efeito para Autenticação Anônima (Necessário para Firestore)
             useEffect(() => {
-                const saved = localStorage.getItem('odoo_fast_expenses');
-                if (saved) setExpenses(JSON.parse(saved));
+                auth.signInAnonymously().catch(error => {
+                    console.error("Erro auth:", error);
+                    showToast("Erro ao conectar ao servidor.", "error");
+                });
                 
                 const savedSet = localStorage.getItem('odoo_fast_settings');
                 if (savedSet) {
@@ -898,9 +901,55 @@
                 }
             }, []);
 
-            useEffect(() => { localStorage.setItem('odoo_fast_expenses', JSON.stringify(expenses)); }, [expenses]);
+            // 2. Efeito para Sincronização em Tempo Real (READ)
+            useEffect(() => {
+                if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) return;
+
+                const safeId = settings.employeeName.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+                const docRef = db.collection('miplace-despesas').doc('data').collection('users').doc(safeId);
+
+                const unsubscribe = docRef.onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        setIsRemoteUpdate(true); // Bloqueia loop de escrita
+                        if (data.expenses) setExpenses(data.expenses);
+                        if (data.checks) setCalendarChecks(data.checks);
+                        // Pequeno timeout para liberar escrita novamente
+                        setTimeout(() => setIsRemoteUpdate(false), 500);
+                    }
+                }, (error) => {
+                    console.error("Erro sync:", error);
+                });
+
+                return () => unsubscribe();
+            }, [settings.employeeName]);
+
+            // 3. Efeito para Sincronização em Tempo Real (WRITE)
+            useEffect(() => {
+                if (isRemoteUpdate) return; // Não salva se a mudança veio da nuvem
+                if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
+                    // Fallback local se não tiver nome configurado
+                    localStorage.setItem('odoo_fast_expenses', JSON.stringify(expenses));
+                    localStorage.setItem('odoo_calendar_checks', JSON.stringify(calendarChecks));
+                    return;
+                }
+
+                const timer = setTimeout(() => {
+                    const safeId = settings.employeeName.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+                    const docRef = db.collection('miplace-despesas').doc('data').collection('users').doc(safeId);
+                    
+                    docRef.set({
+                        expenses: expenses,
+                        checks: calendarChecks,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                        userName: settings.employeeName
+                    }, { merge: true }).catch(err => console.error("Erro auto-save:", err));
+                }, 1000); // Debounce de 1 segundo
+
+                return () => clearTimeout(timer);
+            }, [expenses, calendarChecks, settings.employeeName, isRemoteUpdate]);
+
             useEffect(() => { localStorage.setItem('odoo_fast_settings', JSON.stringify(settings)); }, [settings]);
-            useEffect(() => { localStorage.setItem('odoo_calendar_checks', JSON.stringify(calendarChecks)); }, [calendarChecks]);
 
             useEffect(() => {
                 const handleBeforeUnload = (e) => {
@@ -1022,11 +1071,11 @@
 
             const handleCalendarCheckToggle = (key, status) => {
                 setCalendarChecks(prev => ({ ...prev, [key]: status }));
+                // O useEffect de Sync (WRITE) cuidará de salvar no Firebase
             };
 
-            // --- SALVAR NO COMPUTADOR (Agora inclui Checks) ---
+            // --- SALVAR NO COMPUTADOR ---
             const saveToComputer = async () => {
-                // Objeto de Backup Completo
                 const backupData = {
                     data: expenses,
                     checks: calendarChecks,
@@ -1063,7 +1112,7 @@
                 setShowBackupOptions(false);
             };
 
-            // --- SALVAR NA NUVEM (Agora inclui Checks) ---
+            // --- SALVAR NA NUVEM (LEGADO - MANTIDO PARA COMPATIBILIDADE) ---
             const saveToCloud = async () => {
                 if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
                     showToast("Configure seu nome nas configurações antes de salvar na nuvem!", "error");
@@ -1075,10 +1124,10 @@
                         user: settings.employeeName,
                         date: new Date(),
                         data: expenses,
-                        checks: calendarChecks, // SALVANDO OS CHECKS
+                        checks: calendarChecks,
                         formattedDate: formatDateBR(getTodayLocal())
                     });
-                    showToast("Backup e Checklist salvos na nuvem!", "success");
+                    showToast("Backup manual salvo na nuvem!", "success");
                     setShowBackupOptions(false);
                 } catch (error) {
                     console.error("Erro ao salvar no Firebase:", error);
@@ -1086,7 +1135,7 @@
                 }
             };
             
-            // --- RESTAURAR DA NUVEM (Agora restaura Checks) ---
+            // --- RESTAURAR DA NUVEM (MANUAL) ---
             const handleCloudRestore = async () => {
                 if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
                     showToast("Configure seu nome para buscar seus backups!", "error");
@@ -1108,19 +1157,17 @@
                     const doc = snapshot.docs[0].data();
                     
                     if (confirm(`Restaurar backup de ${new Date(doc.date.seconds * 1000).toLocaleString()}? Isso substituirá os dados atuais.`)) {
-                        // Restaura Despesas
+                        setIsRemoteUpdate(true);
                         if (doc.data && Array.isArray(doc.data)) {
                             setExpenses(doc.data);
                         }
-                        
-                        // Restaura Checklist (se existir no backup)
                         if (doc.checks) {
                             setCalendarChecks(doc.checks);
                             showToast("Despesas e Checklist restaurados!", "success");
                         } else {
-                            showToast("Apenas despesas restauradas (Checklist antigo não encontrado).", "info");
+                            showToast("Apenas despesas restauradas.", "info");
                         }
-                        
+                        setTimeout(() => setIsRemoteUpdate(false), 500);
                         setIsSettingsOpen(false);
                     }
 
@@ -1136,7 +1183,7 @@
 
             const triggerRestore = () => { fileInputRef.current.click(); };
 
-            // --- RESTAURAR ARQUIVO LOCAL (Compatibilidade Versão 1 e 2) ---
+            // --- RESTAURAR ARQUIVO LOCAL ---
             const handleRestoreFile = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -1146,7 +1193,7 @@
                         const importedData = JSON.parse(event.target.result);
                         
                         if (confirm("Isso irá substituir todas as despesas atuais pelo backup. Tem certeza?")) {
-                            
+                            setIsRemoteUpdate(true);
                             // Caso 1: Backup Antigo (Array direto)
                             if (Array.isArray(importedData)) {
                                 setExpenses(importedData);
@@ -1164,7 +1211,7 @@
                             } else { 
                                 showToast("Arquivo de backup inválido", "error"); 
                             }
-                            
+                            setTimeout(() => setIsRemoteUpdate(false), 500);
                             setIsSettingsOpen(false);
                         }
                     } catch (err) { showToast("Erro ao ler arquivo", "error"); }
@@ -1280,6 +1327,7 @@
             const confirmClearAll = () => {
                 if (passwordInput === "#Banana@10") {
                     setExpenses([]);
+                    setCalendarChecks({});
                     setIsPasswordModalOpen(false);
                     setPasswordInput('');
                     showToast("Todos os dados foram apagados", "success");
@@ -1372,7 +1420,14 @@
                                                 )}
                                             </button>
                                         </div>
-                                        <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">Registro Profissional</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">Registro Profissional</p>
+                                            {settings.employeeName !== "Seu Nome" && (
+                                                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold border border-emerald-200">
+                                                    Conectado: {settings.employeeName}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -1711,7 +1766,7 @@
                                         <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-emerald-50 text-slate-500 group-hover:text-emerald-500 transition-colors">
                                             <Icons.CloudUpload className="w-5 h-5" />
                                         </div>
-                                        <span className="flex-1 text-left">Na Nuvem (Firebase)</span>
+                                        <span className="flex-1 text-left">Na Nuvem (Manual)</span>
                                         <span className="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-md font-bold mr-2">Online</span>
                                     </button>
                                 </div>
@@ -1828,7 +1883,7 @@
                                             <input type="file" ref={fileInputRef} onChange={handleRestoreFile} accept=".json" className="hidden" />
 
                                             <button onClick={handleCloudRestore} className="flex items-center justify-center gap-2 w-full py-3.5 bg-emerald-50 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 border border-emerald-100 rounded-xl transition-all shadow-sm">
-                                                <Icons.Cloud className="w-5 h-5" /> Baixar da Nuvem
+                                                <Icons.Cloud className="w-5 h-5" /> Baixar da Nuvem (Manual)
                                             </button>
                                         </div>
                                     </div>
