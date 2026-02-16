@@ -3,106 +3,270 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório de Despesas Odoo</title>
+    <title>Relatório de Despesas Miplace - Liquid Style</title>
     
-    <!-- Fonte Inter (Padrão Moderno) -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Configurações do Tailwind -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        odoo: { 500: '#714B67', 600: '#5F3F56', 700: '#4D3345' } // Cores inspiradas no Odoo
+                        // Paleta Liquid (Vibrante e translúcida)
+                        liquid: {
+                            bg: '#F3F4F6',        // Cinza azulado muito claro
+                            text: '#1E293B',      // Slate 800
+                            primary: '#3B82F6',   // Azul vibrante
+                            secondary: '#8B5CF6', // Roxo vibrante
+                            accent: '#06B6D4',    // Ciano
+                            glass: 'rgba(255, 255, 255, 0.7)',
+                            glassDark: 'rgba(255, 255, 255, 0.4)',
+                            border: 'rgba(255, 255, 255, 0.8)',
+                        }
+                    },
+                    boxShadow: {
+                        'liquid-card': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+                        'liquid-glow': '0 0 15px rgba(59, 130, 246, 0.5)',
+                        'liquid-highlight': 'inset 0 1px 0 rgba(255, 255, 255, 0.8)', // Brilho superior
+                        'liquid-inner': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
+                    },
+                    borderRadius: {
+                        'liquid': '1.25rem',
                     }
                 }
             }
         }
     </script>
     
-    <!-- React & Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <style>
-        body { background-color: #f1f5f9; }
-        input[type=number] { -moz-appearance: textfield; }
-        input::-webkit-calendar-picker-indicator { opacity: 100; cursor: pointer; }
-        
-        /* Scrollbar personalizada */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
-        /* Animações */
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .pulse-red { animation: pulseRed 2s infinite; }
-        @keyframes pulseRed { 
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 
-            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } 
+    <style>
+        body { 
+            background: #F0F2F5; /* Fundo base */
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: #1E293B;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        input[type=number] { -moz-appearance: textfield; }
+        input::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; }
+        
+        /* Scrollbar Liquid */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); }
+        ::-webkit-scrollbar-thumb { 
+            background: rgba(148, 163, 184, 0.5); 
+            border-radius: 10px; 
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.8); }
+
+        /* Classes Liquid Glass */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05), inset 0 0 20px rgba(255,255,255,0.5);
         }
 
-        /* --- CSS OTIMIZADO PARA IMPRESSÃO --- */
+        .liquid-btn-primary {
+            background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 4px 12px rgba(59, 130, 246, 0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .liquid-btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.8), 0 6px 16px rgba(59, 130, 246, 0.4), 0 0 10px rgba(59, 130, 246, 0.2);
+        }
+        .liquid-btn-primary:active {
+            transform: translateY(1px);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        /* NOVO ESTILO: Botão Liquid 3D (Cápsula Azul) */
+        .liquid-btn-3d {
+            background: linear-gradient(180deg, #3B82F6 0%, #1D4ED8 100%);
+            border-radius: 9999px; /* Cápsula total */
+            border: none;
+            
+            /* Sombra interna para profundidade e sombra externa para elevação */
+            box-shadow: 
+                inset 0 3px 5px rgba(255,255,255,0.4),  /* Luz topo borda */
+                inset 0 -3px 5px rgba(0,0,0,0.2),       /* Sombra base borda */
+                0 8px 20px rgba(37, 99, 235, 0.4);      /* Glow externo */
+            
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        /* O "Brilho" (Highlight) na parte superior */
+        .liquid-btn-3d::before {
+            content: "";
+            position: absolute;
+            top: 3px;
+            left: 5%;
+            width: 90%;
+            height: 40%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.05) 100%);
+            border-radius: 9999px;
+            pointer-events: none;
+        }
+
+        .liquid-btn-3d:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+            box-shadow: 
+                inset 0 3px 5px rgba(255,255,255,0.6), 
+                inset 0 -3px 5px rgba(0,0,0,0.2),
+                0 12px 25px rgba(37, 99, 235, 0.5);
+        }
+
+        .liquid-btn-3d:active {
+            transform: translateY(1px);
+            box-shadow: 
+                inset 0 2px 4px rgba(0,0,0,0.3),
+                0 4px 10px rgba(37, 99, 235, 0.3);
+        }
+
+        /* NOVO ESTILO: Botão Liquid Green 3D (Cápsula Verde) */
+        .liquid-btn-green-3d {
+            background: linear-gradient(180deg, #10B981 0%, #047857 100%); /* Emerald 500 -> Emerald 700 */
+            border-radius: 9999px;
+            border: none;
+            
+            /* Sombra interna para profundidade e sombra externa para elevação */
+            box-shadow: 
+                inset 0 3px 5px rgba(255,255,255,0.4),
+                inset 0 -3px 5px rgba(0,0,0,0.2),
+                0 8px 20px rgba(16, 185, 129, 0.4);
+            
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .liquid-btn-green-3d::before {
+            content: "";
+            position: absolute;
+            top: 3px;
+            left: 5%;
+            width: 90%;
+            height: 40%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.05) 100%);
+            border-radius: 9999px;
+            pointer-events: none;
+        }
+
+        .liquid-btn-green-3d:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+            box-shadow: 
+                inset 0 3px 5px rgba(255,255,255,0.6), 
+                inset 0 -3px 5px rgba(0,0,0,0.2),
+                0 12px 25px rgba(16, 185, 129, 0.5);
+        }
+
+        .liquid-btn-green-3d:active {
+            transform: translateY(1px);
+            box-shadow: 
+                inset 0 2px 4px rgba(0,0,0,0.3),
+                0 4px 10px rgba(16, 185, 129, 0.3);
+        }
+
+
+        .liquid-input {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
+            transition: all 0.3s ease;
+        }
+        .liquid-input:focus {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15), inset 0 1px 2px rgba(0,0,0,0.03);
+            outline: none;
+        }
+
+        /* Animações */
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+        .shimmer::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+            transform: skewX(-20deg) translateX(-150%);
+            animation: shimmer 3s infinite;
+        }
+        @keyframes shimmer { 100% { transform: skewX(-20deg) translateX(150%); } }
+
+        /* CSS Print */
         @media print {
             .no-print { display: none !important; }
-            
-            body { 
-                background-color: white; 
-                color: black;
-                font-size: 11px;
+            body { background: white !important; }
+            .glass-panel, .liquid-btn-primary, .liquid-input, .liquid-btn-3d { 
+                background: white !important; 
+                box-shadow: none !important; 
+                border: 1px solid #ddd !important;
+                backdrop-filter: none !important;
+                color: black !important;
             }
-
-            .truncate, .max-w-xs {
-                white-space: normal !important;
-                overflow: visible !important;
-                text-overflow: clip !important;
-                width: auto !important;
-            }
-
+            .truncate, .max-w-xs { white-space: normal !important; overflow: visible !important; width: auto !important; }
             table { width: 100% !important; table-layout: auto !important; }
             tr { break-inside: avoid; page-break-inside: avoid; } 
             td, th { padding: 4px 2px !important; vertical-align: top !important; }
-
-            .print-w-15ch {
-                width: 15ch !important;
-                max-width: 15ch !important;
-                white-space: normal !important;
-                word-wrap: break-word !important;
-            }
-
-            /* Correção do Cabeçalho Fixo na Impressão */
-            thead {
-                position: static !important; /* Deixa de ser fixo (sticky) */
-                box-shadow: none !important;
-            }
-
-            /* Correção da Rolagem na Impressão (Mostra tudo) */
-            .print-scroll-fix {
-                max-height: none !important;
-                overflow: visible !important;
-            }
-
-            .text-slate-400 { color: #555 !important; } 
-            .bg-slate-50 { background-color: transparent !important; }
-            .print-shadow-none { box-shadow: none !important; border: 1px solid #ddd !important; }
-            .print-mt-4 { margin-top: 1rem !important; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .print-scroll-fix { max-height: none !important; overflow: visible !important; }
+            thead { position: static !important; }
         }
     </style>
 </head>
-<body>
+<body class="antialiased">
     <div id="root"></div>
 
     <script type="text/babel">
+        // --- CONFIGURAÇÃO FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBTKRckW0phSEPoDNBwpSeb6rconsokbpI",
+            authDomain: "miplace-despesas.firebaseapp.com",
+            projectId: "miplace-despesas",
+            storageBucket: "miplace-despesas.firebasestorage.app",
+            messagingSenderId: "770624075590",
+            appId: "1:770624075590:web:297b8650a919818041d747",
+            measurementId: "G-Z33RRM8XPD"
+        };
+        
+        // Inicializar Firebase (Prevenção de dupla inicialização)
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
         const { useState, useEffect, useMemo, useRef } = React;
 
         // --- Componente de Ícones ---
@@ -139,10 +303,13 @@
             CheckSquare: (props) => <Icon {...props} path='<polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>' />,
             Bell: (props) => <Icon {...props} path='<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path>' />,
             ZoomIn: (props) => <Icon {...props} path='<circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line>' />,
-            ZoomOut: (props) => <Icon {...props} path='<circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line>' />
+            ZoomOut: (props) => <Icon {...props} path='<circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line>' />,
+            Cloud: (props) => <Icon {...props} path='<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>' />,
+            CloudUpload: (props) => <Icon {...props} path='<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line>' />,
+            HardDrive: (props) => <Icon {...props} path='<line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="10.01" y2="16"></line>' />
         };
 
-        // --- Dados Estáticos ---
+        // --- Dados Estáticos (MANTIDO) ---
         const CATEGORIES_LIST = [
             "Despesa Fixa", "Despesa", "Salário", "Vale Alimentação",
             "Vale Transporte", "Vale (Adiantamento)", "Despesa Jack",
@@ -154,7 +321,16 @@
             "Piracicaba (DP - Realme - XV)", "Amparo (Premium - Kassouf)", "Todas"
         ];
 
-        // --- Configuração de Lembretes Fixos ---
+        const STORE_IMAGES = {
+            "Dom Pedro II": "dompedro.png",
+            "Realme": "realme.png",
+            "Xv de Novembro": "xv.png",
+            "Premium": "premium.png",
+            "Kassouf": "kassouf.png",
+            "default": "image_6.png"
+        };
+
+        // --- Configuração de Lembretes Fixos (MANTIDO) ---
         const FIXED_NOTIFICATIONS = [
             // Dia 05
             { day: 5, description: "Aluguel Loja Premium" },
@@ -227,19 +403,34 @@
             { day: 27, description: "Vale Alimentação Funcionários" }
         ];
 
+        // Atualização dos Badges de Loja para Liquid Style
         const getStoreColorClass = (storeName) => {
+            // Usando gradients para efeito liquid
             const map = {
-                "Dom Pedro II": "bg-blue-50 text-blue-700 border-blue-200 ring-blue-500/30",     
-                "Realme": "bg-yellow-50 text-yellow-700 border-yellow-200 ring-yellow-500/30",         
-                "Xv de Novembro": "bg-gray-100 text-gray-700 border-gray-300 ring-gray-500/30",       
-                "Premium": "bg-purple-50 text-purple-700 border-purple-200 ring-purple-500/30",         
-                "Amparo": "bg-purple-50 text-purple-700 border-purple-200 ring-purple-500/30",         
-                "Kassouf": "bg-orange-50 text-orange-700 border-orange-200 ring-orange-500/30",         
-                "Piracicaba (DP - Realme - XV)": "bg-red-50 text-red-700 border-red-200 ring-red-500/30", 
-                "Amparo (Premium - Kassouf)": "bg-pink-50 text-pink-700 border-pink-200 ring-pink-500/30",   
-                "Todas": "bg-green-50 text-green-700 border-green-200 ring-green-500/30"            
+                "Dom Pedro II": "bg-blue-50/50 text-blue-600 border-blue-200 shadow-sm",     
+                "Realme": "bg-yellow-50/50 text-yellow-600 border-yellow-200 shadow-sm",         
+                "Xv de Novembro": "bg-slate-50/50 text-slate-600 border-slate-200 shadow-sm",       
+                "Premium": "bg-fuchsia-50/50 text-fuchsia-600 border-fuchsia-200 shadow-sm",         
+                "Amparo": "bg-purple-50/50 text-purple-600 border-purple-200 shadow-sm",         
+                "Kassouf": "bg-orange-50/50 text-orange-600 border-orange-200 shadow-sm",         
+                "Piracicaba (DP - Realme - XV)": "bg-red-50/50 text-red-600 border-red-200 shadow-sm", 
+                "Amparo (Premium - Kassouf)": "bg-pink-50/50 text-pink-600 border-pink-200 shadow-sm",   
+                "Todas": "bg-emerald-50/50 text-emerald-600 border-emerald-200 shadow-sm"            
             };
             return map[storeName] || "bg-gray-50 text-gray-600 border-gray-200";
+        };
+
+        // --- NOVO: Estilo das Barras do Dashboard (Cores Específicas) ---
+        const getStoreBarColor = (storeName) => {
+            const map = {
+                "Dom Pedro II": "from-blue-500 to-blue-300",
+                "Realme": "from-yellow-400 to-yellow-200",
+                "Xv de Novembro": "from-slate-900 to-slate-600", // Preto/Cinza escuro
+                "Premium": "from-purple-500 to-purple-300",
+                "Kassouf": "from-orange-500 to-orange-300",
+                "Amparo": "from-pink-500 to-pink-300"
+            };
+            return map[storeName] || "from-slate-400 to-slate-200";
         };
 
         const DEFAULT_SETTINGS = {
@@ -248,7 +439,7 @@
             categories: CATEGORIES_LIST.map(cat => ({ label: cat, odooRef: cat }))
         };
 
-        // --- Helpers ---
+        // --- Helpers (MANTIDO) ---
         const getTodayLocal = () => {
             const d = new Date();
             const year = d.getFullYear();
@@ -267,12 +458,12 @@
             return new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
         };
 
-        // --- Componente Personalizado de Input de Data ---
+        // --- Componente Personalizado de Input de Data (Visual Liquid) ---
         const DateInput = ({ value, onChange, required, className, placeholder = "dd/mm/aaaa" }) => {
             const [inputType, setInputType] = useState('text');
 
             return (
-                <div className="relative w-full">
+                <div className="relative w-full group">
                     <input
                         type={inputType}
                         required={required}
@@ -289,29 +480,34 @@
                         className={className}
                     />
                     {inputType === 'text' && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-slate-400">
-                            <Icons.Calendar className="w-4 h-4" />
+                        <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-blue-400 group-hover:text-blue-600 transition-colors">
+                            <Icons.Calendar className="w-5 h-5 drop-shadow-sm" />
                         </div>
                     )}
                 </div>
             );
         };
 
-        // --- Componente de Notificação (Toast) ---
+        // --- Componente de Notificação (Toast) (Visual Liquid) ---
         const ToastContainer = ({ toasts, removeToast }) => (
-            <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+            <div className="fixed top-4 right-4 z-[60] flex flex-col gap-3 pointer-events-none">
                 {toasts.map(toast => (
-                    <div key={toast.id} className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border-l-4 transform transition-all duration-300 animate-in slide-in-from-right fade-in bg-white ${
-                        toast.type === 'error' ? 'border-red-500' : 
-                        toast.type === 'success' ? 'border-green-500' : 'border-blue-500'
+                    <div key={toast.id} className={`pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl shadow-liquid-card transform transition-all duration-300 animate-in slide-in-from-right fade-in backdrop-blur-md border ${
+                        toast.type === 'error' ? 'bg-red-50/80 border-red-200 text-red-700' : 
+                        toast.type === 'success' ? 'bg-emerald-50/80 border-emerald-200 text-emerald-700' : 'bg-blue-50/80 border-blue-200 text-blue-700'
                     }`}>
-                        {toast.type === 'error' ? <Icons.AlertCircle className="w-5 h-5 text-red-500"/> : 
-                         toast.type === 'success' ? <Icons.Check className="w-5 h-5 text-green-500"/> : 
-                         <Icons.AlertCircle className="w-5 h-5 text-blue-500"/>}
-                        <div>
-                            <p className="font-medium text-sm text-slate-800">{toast.message}</p>
+                        <div className={`p-2 rounded-full shadow-sm ${
+                             toast.type === 'error' ? 'bg-white/50 text-red-500' : 
+                             toast.type === 'success' ? 'bg-white/50 text-emerald-500' : 'bg-white/50 text-blue-500'
+                        }`}>
+                            {toast.type === 'error' ? <Icons.AlertCircle className="w-5 h-5"/> : 
+                             toast.type === 'success' ? <Icons.Check className="w-5 h-5"/> : 
+                             <Icons.AlertCircle className="w-5 h-5"/>}
                         </div>
-                        <button onClick={() => removeToast(toast.id)} className="text-slate-400 hover:text-slate-600">
+                        <div>
+                            <p className="font-semibold text-sm drop-shadow-sm">{toast.message}</p>
+                        </div>
+                        <button onClick={() => removeToast(toast.id)} className="opacity-60 hover:opacity-100 ml-2">
                             <Icons.X className="w-4 h-4" />
                         </button>
                     </div>
@@ -319,10 +515,8 @@
             </div>
         );
 
-        // --- Helper de Áudio Global ---
-        // Contexto de áudio global para contornar bloqueios de autoplay
+        // --- Helper de Áudio Global (MANTIDO) ---
         let globalAudioCtx = null;
-
         const initAudioContext = () => {
             if (!globalAudioCtx) {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -330,21 +524,19 @@
                     globalAudioCtx = new AudioContext();
                 }
             }
-            // Retoma o contexto se estiver suspenso (comum em navegadores modernos)
             if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
                 globalAudioCtx.resume();
             }
             return globalAudioCtx;
         };
 
-        // --- Componente de Calendário (Visualização + Checklist) ---
+        // --- Componente de Calendário (Visualização + Checklist) - ESTILO LIQUID ---
         const ExpenseCalendar = ({ checkedState, onToggleCheck, showToast }) => {
             const [currentDate, setCurrentDate] = useState(new Date());
-            const [zoomLevel, setZoomLevel] = useState(1); // 0: Small, 1: Medium, 2: Large
+            const [zoomLevel, setZoomLevel] = useState(1); 
             
-            // Modals State
             const [confirmPayModal, setConfirmPayModal] = useState({ open: false, desc: null });
-            const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 }); // Posição do Mouse
+            const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
             const [fixModal, setFixModal] = useState({ open: false, desc: null });
             const [fixPassword, setFixPassword] = useState('');
 
@@ -368,12 +560,8 @@
                 onToggleCheck(key, status);
             };
 
-            // Captura a posição do clique para abrir o modal no local exato
             const initiatePayment = (desc, e) => {
-                // Se o evento existir, captura as coordenadas
-                if (e) {
-                    setModalPosition({ x: e.clientX, y: e.clientY });
-                }
+                if (e) setModalPosition({ x: e.clientX, y: e.clientY });
                 setConfirmPayModal({ open: true, desc });
             };
 
@@ -400,73 +588,67 @@
                 }
             };
 
-            // Estilos de cor por dia
             const getDayColorStyles = (day) => {
+                // Estilo Liquid: Cores translúcidas com bordas suaves baseado no dia
                 switch(day) {
-                    case 5: return 'bg-sky-50 border-sky-200 hover:border-sky-300';
-                    case 10: return 'bg-violet-50 border-violet-200 hover:border-violet-300';
-                    case 15: return 'bg-pink-50 border-pink-200 hover:border-pink-300';
-                    case 20: return 'bg-orange-50 border-orange-200 hover:border-orange-300';
-                    case 25: return 'bg-emerald-50 border-emerald-200 hover:border-emerald-300';
-                    case 27: return 'bg-indigo-50 border-indigo-200 hover:border-indigo-300';
-                    default: return 'bg-white border-slate-200 hover:border-odoo-300';
+                    case 5: return 'bg-blue-50/50 border-blue-200 hover:bg-blue-100/50';
+                    case 10: return 'bg-emerald-50/50 border-emerald-200 hover:bg-emerald-100/50';
+                    case 15: return 'bg-orange-50/50 border-orange-200 hover:bg-orange-100/50';
+                    case 20: return 'bg-yellow-50/50 border-yellow-200 hover:bg-yellow-100/50';
+                    case 25: return 'bg-red-50/50 border-red-200 hover:bg-red-100/50';
+                    case 27: return 'bg-purple-50/50 border-purple-200 hover:bg-purple-100/50';
+                    default: return 'bg-white/30 border-white/50 hover:bg-white/60';
                 }
             };
 
-            // Badge de cor para o número do dia
-            const getDayBadgeColor = (day) => {
+            const getDueDateBadgeColor = (day, isChecked) => {
+                if (isChecked) return 'bg-slate-100 text-slate-400 border-slate-200';
                 switch(day) {
-                    case 5: return 'bg-sky-100 text-sky-700';
-                    case 10: return 'bg-violet-100 text-violet-700';
-                    case 15: return 'bg-pink-100 text-pink-700';
-                    case 20: return 'bg-orange-100 text-orange-700';
-                    case 25: return 'bg-emerald-100 text-emerald-700';
-                    case 27: return 'bg-indigo-100 text-indigo-700';
-                    default: return 'bg-slate-100 text-slate-600';
+                    case 5: return 'bg-blue-50 text-blue-600 border-blue-100';
+                    case 10: return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+                    case 15: return 'bg-orange-50 text-orange-600 border-orange-100';
+                    case 20: return 'bg-yellow-50 text-yellow-600 border-yellow-100';
+                    case 25: return 'bg-red-50 text-red-600 border-red-100';
+                    case 27: return 'bg-purple-50 text-purple-600 border-purple-100';
+                    default: return 'bg-blue-50 text-blue-600 border-blue-100';
                 }
-            };
+            }
 
-            // Configuração dinâmica baseada no Zoom
             const getZoomStyles = () => {
                 switch(zoomLevel) {
-                    case 0: return { height: 'h-20', textSize: 'text-[8px]', padding: 'p-1', daySize: 'text-xs', spacing: 'space-y-0.5', badgePad: 'px-1 py-0' };
-                    case 2: return { height: 'h-64', textSize: 'text-xs', padding: 'p-3', daySize: 'text-lg', spacing: 'space-y-2', badgePad: 'px-2 py-1' };
-                    default: return { height: 'h-32 md:h-40', textSize: 'text-[10px]', padding: 'p-2', daySize: 'text-sm', spacing: 'space-y-1', badgePad: 'px-1.5 py-0.5' };
+                    case 0: return { height: 'h-16', textSize: 'text-[9px]', padding: 'p-1' };
+                    case 2: return { height: 'h-40', textSize: 'text-sm', padding: 'p-3' };
+                    default: return { height: 'h-28 md:h-36', textSize: 'text-[11px]', padding: 'p-2' };
                 }
             };
             const zoomStyles = getZoomStyles();
 
             return (
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden fade-in flex flex-col relative transition-all duration-300">
-                    {/* Header do Calendário */}
-                    <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50">
+                <div className="glass-panel rounded-liquid p-6 overflow-hidden fade-in flex flex-col relative transition-all duration-300">
+                    
+                    {/* Header Liquid */}
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-6">
                         <div className="flex items-center gap-4">
-                             <div className="flex bg-white rounded-lg shadow-sm border border-slate-200 p-1">
-                                <button onClick={handlePrevMonth} className="p-1 hover:bg-slate-100 rounded-md transition-colors"><Icons.ChevronLeft className="w-5 h-5 text-slate-500"/></button>
-                                <button onClick={handleToday} className="px-3 text-xs font-bold text-slate-600 hover:text-odoo-600">Hoje</button>
-                                <button onClick={handleNextMonth} className="p-1 hover:bg-slate-100 rounded-md transition-colors"><Icons.ChevronRight className="w-5 h-5 text-slate-500"/></button>
+                             <div className="flex bg-white/40 rounded-xl p-1 gap-1 border border-white/60 shadow-inner">
+                                <button onClick={handlePrevMonth} className="p-2 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-white/50 transition-all"><Icons.ChevronLeft className="w-5 h-5"/></button>
+                                <button onClick={handleToday} className="px-4 text-xs font-bold text-slate-600 hover:text-blue-600 hover:bg-white/50 rounded-lg transition-all uppercase tracking-wide">Hoje</button>
+                                <button onClick={handleNextMonth} className="p-2 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-white/50 transition-all"><Icons.ChevronRight className="w-5 h-5"/></button>
                             </div>
-                            <h2 className="text-xl font-bold text-slate-800 capitalize">{monthNames[month]} <span className="text-slate-400 font-light">{year}</span></h2>
+                            <h2 className="text-2xl font-bold tracking-tight text-slate-800 drop-shadow-sm">{monthNames[month]} <span className="opacity-40 font-light">{year}</span></h2>
                         </div>
 
-                        {/* Controles de Zoom */}
-                        <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-2 bg-white/40 p-1 rounded-xl border border-white/60 shadow-inner">
                             <button 
                                 onClick={() => setZoomLevel(prev => Math.max(0, prev - 1))} 
                                 disabled={zoomLevel === 0}
-                                className={`p-1.5 rounded-md transition-colors ${zoomLevel === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-500 hover:bg-slate-100 hover:text-odoo-600'}`}
-                                title="Diminuir Zoom"
+                                className={`p-2 rounded-lg transition-all ${zoomLevel === 0 ? 'opacity-30 cursor-not-allowed' : 'text-slate-500 hover:text-blue-600 hover:bg-white/50'}`}
                             >
                                 <Icons.ZoomOut className="w-4 h-4" />
                             </button>
-                            <span className="text-xs font-bold text-slate-400 w-8 text-center select-none">
-                                {zoomLevel === 0 ? 'PQ' : zoomLevel === 1 ? 'MED' : 'GR'}
-                            </span>
                             <button 
                                 onClick={() => setZoomLevel(prev => Math.min(2, prev + 1))} 
                                 disabled={zoomLevel === 2}
-                                className={`p-1.5 rounded-md transition-colors ${zoomLevel === 2 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-500 hover:bg-slate-100 hover:text-odoo-600'}`}
-                                title="Aumentar Zoom"
+                                className={`p-2 rounded-lg transition-all ${zoomLevel === 2 ? 'opacity-30 cursor-not-allowed' : 'text-slate-500 hover:text-blue-600 hover:bg-white/50'}`}
                             >
                                 <Icons.ZoomIn className="w-4 h-4" />
                             </button>
@@ -474,52 +656,66 @@
                     </div>
 
                     {/* Grid do Calendário */}
-                    <div className="grid grid-cols-7 bg-slate-200 gap-px transition-all duration-300">
-                        {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(d => (
-                            <div key={d} className="bg-slate-50 p-2 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                {d}
-                            </div>
-                        ))}
-                        
-                        {/* Dias Vazios (Offset) */}
-                        {Array.from({ length: firstDay }).map((_, i) => (
-                            <div key={`empty-${i}`} className={`bg-white ${zoomStyles.height} transition-all duration-300`}></div>
-                        ))}
-
-                        {/* Dias do Mês */}
-                        {Array.from({ length: daysInMonth }).map((_, i) => {
-                            const day = i + 1;
-                            const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
-                            
-                            // Visualização apenas informativa no calendário (Considera filtro de mês)
-                            const hasNotification = FIXED_NOTIFICATIONS.some(n => n.day === day && (!n.months || n.months.includes(month)));
-
-                            return (
-                                <div key={day} className={`bg-white ${zoomStyles.height} ${zoomStyles.padding} flex flex-col relative group transition-all duration-300 ${isToday ? 'bg-blue-50/30' : ''}`}>
-                                    <div className="flex justify-between items-start mb-1">
-                                        <span className={`${zoomStyles.daySize} font-bold ${isToday ? 'bg-odoo-600 text-white w-6 h-6 flex items-center justify-center rounded-full' : 'text-slate-700'}`}>{day}</span>
-                                    </div>
-                                    
-                                    {hasNotification && (
-                                        <div className={`flex-1 overflow-y-auto custom-scrollbar ${zoomStyles.spacing}`}>
-                                            {FIXED_NOTIFICATIONS
-                                                .filter(n => n.day === day && (!n.months || n.months.includes(month)))
-                                                .map((note, idx) => (
-                                                <div key={idx} className={`bg-purple-100 text-purple-700 ${zoomStyles.textSize} ${zoomStyles.badgePad} rounded font-medium truncate border border-purple-200`} title={note.description}>
-                                                    {note.description}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                    <div className="p-1">
+                        <div className="grid grid-cols-7 mb-4">
+                            {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(d => (
+                                <div key={d} className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                    {d}
                                 </div>
-                            );
-                        })}
+                            ))}
+                        </div>
+                        
+                        <div className="grid grid-cols-7 gap-3">
+                            {/* Dias Vazios */}
+                            {Array.from({ length: firstDay }).map((_, i) => (
+                                <div key={`empty-${i}`}></div>
+                            ))}
+
+                            {/* Dias do Mês */}
+                            {Array.from({ length: daysInMonth }).map((_, i) => {
+                                const day = i + 1;
+                                const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
+                                const hasNotification = FIXED_NOTIFICATIONS.some(n => n.day === day && (!n.months || n.months.includes(month)));
+
+                                return (
+                                    <div key={day} className={`
+                                        rounded-2xl border transition-all duration-300 backdrop-blur-sm
+                                        ${zoomStyles.height} ${zoomStyles.padding} flex flex-col relative group overflow-hidden
+                                        ${isToday ? 'bg-white/80 border-blue-300 shadow-liquid-glow ring-2 ring-blue-100' : getDayColorStyles(day)}
+                                    `}>
+                                        <div className="flex justify-between items-start mb-1">
+                                            <span className={`
+                                                w-8 h-8 flex items-center justify-center rounded-xl text-sm font-bold transition-all
+                                                ${isToday ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-md' : 'text-slate-500 bg-white/50 shadow-sm'}
+                                            `}>
+                                                {day}
+                                            </span>
+                                            {hasNotification && (
+                                                <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse"></div>
+                                            )}
+                                        </div>
+                                        
+                                        {hasNotification && (
+                                            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 mt-2">
+                                                {FIXED_NOTIFICATIONS
+                                                    .filter(n => n.day === day && (!n.months || n.months.includes(month)))
+                                                    .map((note, idx) => (
+                                                    <div key={idx} className="bg-white/50 border border-white/60 text-slate-600 text-[10px] px-2 py-1 rounded-lg font-medium truncate backdrop-blur-md">
+                                                        {note.description}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     {/* Box de Lembretes/Checklist */}
-                    <div className="p-6 border-t border-slate-200 bg-slate-50/50">
-                        <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                            <Icons.CheckSquare className="w-5 h-5 text-odoo-600"/> 
+                    <div className="mt-8 pt-8 border-t border-slate-200/50">
+                        <h3 className="font-bold text-slate-700 mb-6 flex items-center gap-3 text-lg">
+                            <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg shadow-sm text-blue-600"><Icons.CheckSquare className="w-5 h-5"/></div>
                             Pagamentos Fixos de {monthNames[month]}
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -528,38 +724,32 @@
                                 .map((item, idx) => {
                                  const key = `${year}-${month}-${item.description}`;
                                  const isChecked = !!checkedState[key];
-                                 const dayStyle = getDayColorStyles(item.day);
-                                 const badgeStyle = getDayBadgeColor(item.day);
                                  
                                  return (
-                                     <div key={idx} className={`flex items-center gap-3 p-4 rounded-xl border shadow-sm transition-all duration-300 ${isChecked ? 'bg-white/60 border-green-200 opacity-60' : dayStyle}`}>
+                                     <div key={idx} className={`flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border ${isChecked ? 'bg-slate-50/50 border-slate-100 opacity-60 grayscale' : 'bg-white/40 border-white/60 hover:bg-white/70 hover:shadow-md'}`}>
                                          <div className="relative flex items-center">
-                                            <input 
-                                                type="checkbox" 
-                                                id={`check-${idx}`}
-                                                checked={isChecked} 
-                                                readOnly
+                                            <div 
                                                 onClick={(e) => !isChecked && initiatePayment(item.description, e)}
-                                                className={`peer w-6 h-6 rounded-md border-2 border-slate-300 focus:ring-odoo-500 transition-all appearance-none ${!isChecked ? 'cursor-pointer hover:border-odoo-500' : 'cursor-default text-green-600 checked:bg-green-600 checked:border-green-600'}`}
-                                            />
-                                            <Icons.Check className="w-4 h-4 text-white absolute left-1 pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                                className={`w-6 h-6 rounded-lg transition-all cursor-pointer flex items-center justify-center border ${!isChecked ? 'border-slate-300 bg-white/80 hover:border-blue-400' : 'bg-green-500 border-green-500 text-white shadow-liquid-glow'}`}
+                                            >
+                                                {isChecked && <Icons.Check className="w-3.5 h-3.5" />}
+                                            </div>
                                          </div>
                                          <label 
-                                            htmlFor={`check-${idx}`} 
-                                            className={`flex-1 cursor-pointer select-none ${isChecked ? "opacity-50" : ""}`} 
+                                            className="flex-1 cursor-pointer select-none" 
                                             onClick={(e) => { e.preventDefault(); !isChecked && initiatePayment(item.description, e); }}
                                          >
-                                             <p className={`font-bold text-base ${isChecked ? "text-slate-500 line-through" : "text-slate-800"}`}>
+                                             <p className={`font-semibold text-sm ${isChecked ? "text-slate-400 line-through" : "text-slate-700"}`}>
                                                  {item.description}
                                              </p>
-                                             <p className={`text-xs mt-1 font-bold inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${isChecked ? 'bg-slate-100 text-slate-500' : badgeStyle}`}>
+                                             <p className={`text-xs mt-1 font-medium inline-flex items-center gap-1 px-2 py-0.5 rounded-full border ${getDueDateBadgeColor(item.day, isChecked)}`}>
                                                  <Icons.Calendar className="w-3 h-3" /> Dia {item.day}
                                              </p>
                                          </label>
                                          {isChecked && (
                                              <div className="flex flex-col items-end gap-1">
-                                                 <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full animate-in fade-in zoom-in">Pago</span>
-                                                 <button onClick={() => initiateFix(item.description)} className="text-[10px] font-bold text-red-400 hover:text-red-600 hover:underline">
+                                                 <span className="text-[10px] font-bold text-white bg-green-500/90 px-2 py-1 rounded-lg shadow-sm backdrop-blur-sm">Pago</span>
+                                                 <button onClick={() => initiateFix(item.description)} className="text-[10px] font-bold text-red-400 hover:text-red-500 hover:underline">
                                                      Corrigir
                                                  </button>
                                              </div>
@@ -570,53 +760,50 @@
                         </div>
                     </div>
 
-                    {/* Modal Confirmar Pagamento (Posicionado no Mouse) */}
+                    {/* Modais Liquid */}
                     {confirmPayModal.open && (
                         <>
-                            {/* Backdrop transparente para fechar ao clicar fora */}
-                            <div className="fixed inset-0 z-40 cursor-default" onClick={() => setConfirmPayModal({open:false, desc:null})}></div>
-                            
+                            <div className="fixed inset-0 z-[70] cursor-default bg-slate-900/10 backdrop-blur-sm" onClick={() => setConfirmPayModal({open:false, desc:null})}></div>
                             <div 
-                                className="fixed z-50 bg-white rounded-2xl shadow-2xl w-64 p-4 text-center border border-slate-100 animate-in fade-in zoom-in duration-150"
+                                className="fixed z-[80] glass-panel rounded-2xl p-6 text-center animate-in fade-in zoom-in duration-200 w-72"
                                 style={{ 
                                     top: modalPosition.y, 
                                     left: modalPosition.x,
-                                    transform: 'translate(-50%, -50%)' // Centraliza exatamente onde o mouse está
+                                    transform: 'translate(-50%, -50%)'
                                 }}
                             >
-                                <div className="mx-auto w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-                                    <Icons.Check className="w-5 h-5 text-blue-600" />
+                                <div className="mx-auto w-12 h-12 bg-blue-50/80 rounded-full flex items-center justify-center mb-4 shadow-inner text-blue-500">
+                                    <Icons.Check className="w-6 h-6" />
                                 </div>
-                                <h3 className="text-base font-bold text-slate-800 mb-1">Confirmar?</h3>
-                                <p className="text-xs text-slate-500 mb-4">{confirmPayModal.desc}</p>
-                                <div className="flex gap-2">
-                                    <button onClick={() => setConfirmPayModal({open:false, desc:null})} className="flex-1 py-2 bg-slate-50 border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-100 text-xs">Não</button>
-                                    <button onClick={confirmPayment} className="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md shadow-blue-200 text-xs">Sim</button>
+                                <h3 className="text-lg font-bold text-slate-800 mb-1">Confirmar?</h3>
+                                <p className="text-xs text-slate-500 mb-6 font-medium">{confirmPayModal.desc}</p>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setConfirmPayModal({open:false, desc:null})} className="flex-1 py-2.5 bg-white/50 border border-white/60 text-slate-600 font-bold rounded-xl hover:bg-white/80 transition-all text-xs">Não</button>
+                                    <button onClick={confirmPayment} className="flex-1 py-2.5 liquid-btn-primary rounded-xl font-bold text-xs">Sim</button>
                                 </div>
                             </div>
                         </>
                     )}
 
-                    {/* Modal Corrigir (Senha) */}
                     {fixModal.open && (
-                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in">
-                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 text-center transform transition-all scale-100">
-                                <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                                    <Icons.RotateCcw className="w-6 h-6 text-red-600" />
+                        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/20 backdrop-blur-md p-4 animate-in fade-in">
+                            <div className="glass-panel w-full max-w-xs p-8 text-center transform transition-all scale-100 rounded-3xl">
+                                <div className="mx-auto w-14 h-14 bg-red-50/80 rounded-2xl flex items-center justify-center mb-5 rotate-12 shadow-sm text-red-500">
+                                    <Icons.RotateCcw className="w-7 h-7" />
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-800 mb-2">Corrigir Status</h3>
-                                <p className="text-sm text-slate-500 mb-4">Digite a senha de administrador para reverter este pagamento.</p>
+                                <h3 className="text-xl font-bold text-slate-800 mb-2">Corrigir Status</h3>
+                                <p className="text-sm text-slate-500 mb-6">Digite a senha de administrador.</p>
                                 <input 
                                     type="password" 
                                     autoFocus
                                     placeholder="Senha"
                                     value={fixPassword}
-                                    onChange={e => setFixPassword(e.target.value)}
-                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-center font-bold text-slate-800 mb-4"
+                                    onChange={e => setPasswordInput(e.target.value)}
+                                    className="liquid-input w-full px-5 py-3 rounded-xl text-center font-bold text-slate-700 mb-6 placeholder-slate-300" 
                                 />
                                 <div className="flex gap-3">
-                                    <button onClick={() => setFixModal({open:false, desc:null})} className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50">Cancelar</button>
-                                    <button onClick={confirmFix} className="flex-1 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-lg shadow-red-200">Corrigir</button>
+                                    <button onClick={() => setFixModal({open:false, desc:null})} className="flex-1 py-3 bg-white/50 border border-white/60 text-slate-600 font-bold rounded-xl hover:bg-white/80 transition-all">Cancelar</button>
+                                    <button onClick={confirmFix} className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-200 transition-all">Corrigir</button>
                                 </div>
                             </div>
                         </div>
@@ -625,9 +812,208 @@
             );
         };
 
+        // --- NOVO COMPONENTE: Ícone 3D de Calendário ---
+        const CalendarIcon3D = () => {
+            const today = new Date().getDate();
+            return (
+                <div className="relative w-10 h-10 group cursor-pointer transition-transform hover:-translate-y-0.5 active:translate-y-0">
+                    {/* Sombra base */}
+                    <div className="absolute inset-0 bg-slate-900/20 rounded-xl translate-y-1 blur-[1px]"></div>
+                    
+                    {/* Corpo do Calendário */}
+                    <div className="relative w-full h-full bg-[#f8f9fa] rounded-xl overflow-hidden border border-slate-200 shadow-inner flex flex-col items-center">
+                        {/* Header Vermelho */}
+                        <div className="h-[35%] w-full bg-gradient-to-b from-[#ff4d4d] to-[#dc2626] relative">
+                            {/* Brilho no header */}
+                            <div className="absolute top-0 left-0 w-full h-1/2 bg-white/30 rounded-t-md"></div>
+                        </div>
+                        {/* Número do Dia */}
+                        <div className="h-[65%] flex items-center justify-center">
+                            <span className="text-lg font-bold text-slate-800 leading-none font-sans tracking-tight">{today}</span>
+                        </div>
+                    </div>
+
+                    {/* Argolas (Rings) */}
+                    <div className="absolute -top-[2px] left-[20%] w-1.5 h-2.5 bg-gradient-to-b from-gray-400 via-white to-gray-500 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.3)] z-20"></div>
+                    <div className="absolute -top-[2px] right-[20%] w-1.5 h-2.5 bg-gradient-to-b from-gray-400 via-white to-gray-500 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.3)] z-20"></div>
+                    
+                    {/* Furos das argolas (preto/escuro) */}
+                    <div className="absolute top-[2px] left-[20%] w-1.5 h-1.5 bg-black/20 rounded-full z-10 translate-y-0.5"></div>
+                    <div className="absolute top-[2px] right-[20%] w-1.5 h-1.5 bg-black/20 rounded-full z-10 translate-y-0.5"></div>
+                </div>
+            );
+        };
+
+        // --- NOVO COMPONENTE: Ícone 3D de Avançar (Estilo da Foto) ---
+        const FastForwardIcon3D = () => (
+            <div className="relative w-12 h-12 group select-none">
+                {/* Sombra Projetada */}
+                <div className="absolute inset-0 bg-blue-900/30 rounded-[14px] translate-y-2 translate-x-0 blur-[2px]"></div>
+                
+                {/* Corpo Lateral (Extrusão) */}
+                <div className="absolute inset-0 bg-[#2563eb] rounded-[14px] translate-y-1.5"></div>
+                
+                {/* Face Frontal */}
+                <div className="absolute inset-0 bg-gradient-to-b from-[#60a5fa] to-[#3b82f6] rounded-[14px] flex items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.5),inset_0_-2px_4px_rgba(0,0,0,0.1)]">
+                    {/* Ícone de Setas Duplas */}
+                    <div className="flex -space-x-1.5 items-center justify-center transform translate-y-[1px]">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-sm filter">
+                            <path d="M13 17l5-5-5-5" />
+                            <path d="M6 17l5-5-5-5" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- NOVO COMPONENTE: Ícone de Disquete 3D (Estilo Realista Black) ---
+        const FloppyDiskIcon3D = () => (
+            <div className="relative w-10 h-10 group cursor-pointer transition-transform hover:-translate-y-0.5 active:translate-y-0">
+                {/* Shadow */}
+                <div className="absolute inset-0 bg-slate-900/30 rounded-lg translate-y-1 blur-[1px]"></div>
+                
+                {/* Disk Body (Black Plastic) */}
+                <div className="absolute inset-0 bg-[#1e1e1e] rounded-lg shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] overflow-hidden">
+                    
+                    {/* Label Indent (Top Area) */}
+                    <div className="absolute top-0 left-[10%] right-[10%] h-[40%] border-b border-l border-r border-white/5 bg-[#181818]"></div>
+
+                    {/* Metal Shutter */}
+                    <div className="absolute top-0 left-[15%] w-[45%] h-[38%] bg-gradient-to-b from-[#e5e7eb] via-[#d1d5db] to-[#9ca3af] shadow-md flex items-center justify-center rounded-b-[2px]">
+                        {/* Shutter Window */}
+                        <div className="w-[35%] h-[65%] bg-[#1e1e1e] rounded-[1px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.8)] ml-[15%]"></div>
+                    </div>
+
+                    {/* Metal Hub */}
+                    <div className="absolute top-[60%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[32%] h-[32%] rounded-full bg-gradient-to-br from-[#f3f4f6] to-[#6b7280] shadow-[0_1px_2px_rgba(0,0,0,0.5)] flex items-center justify-center border border-gray-400">
+                        {/* Hub Hole */}
+                        <div className="w-[30%] h-[30%] bg-[#181818] rounded-[1px] transform rotate-12 shadow-inner"></div>
+                        {/* Driving Hole */}
+                        <div className="absolute bottom-[15%] right-[25%] w-[15%] h-[15%] bg-[#181818] rounded-full shadow-inner"></div>
+                    </div>
+
+                    {/* Bottom Holes */}
+                    <div className="absolute bottom-[8%] left-[8%] w-[10%] h-[10%] bg-[#121212] rounded-[2px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] border border-white/5"></div>
+                    <div className="absolute bottom-[8%] right-[8%] w-[10%] h-[10%] bg-[#121212] rounded-[2px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] border border-white/5 flex items-center justify-center">
+                         {/* Write protect tab */}
+                         <div className="w-[60%] h-[60%] bg-[#1e1e1e] mt-[40%]"></div>
+                    </div>
+                    
+                    {/* Top Right Arrow/Notch simulation */}
+                    <div className="absolute top-[2%] right-[2%] w-0 h-0 border-t-[6px] border-r-[6px] border-t-transparent border-r-white/5"></div>
+                </div>
+            </div>
+        );
+
+        // --- NOVO COMPONENTE: Ícone de Configurações 3D (Engrenagens Metálicas) ---
+        const SettingsIcon3D = () => (
+            <div className="relative w-12 h-12 -m-1 group cursor-pointer transition-transform hover:rotate-45 duration-700 ease-in-out">
+                {/* SVG principal */}
+                <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-lg filter">
+                    <defs>
+                        <linearGradient id="gearMetal" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#e5e7eb" />   {/* lighter */}
+                            <stop offset="50%" stopColor="#9ca3af" />   {/* mid */}
+                            <stop offset="100%" stopColor="#4b5563" />  {/* darker */}
+                        </linearGradient>
+                        <linearGradient id="gearInner" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#6b7280" />
+                            <stop offset="100%" stopColor="#f3f4f6" />
+                        </linearGradient>
+                    </defs>
+
+                    {/* Big Gear Group */}
+                    <g transform="translate(38, 38)">
+                        {/* Teeth - 8 rects rotated */}
+                        {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
+                            <rect key={deg} x="-6" y="-38" width="12" height="76" rx="2" fill="url(#gearMetal)" transform={`rotate(${deg})`} />
+                        ))}
+                        {/* Main Body */}
+                        <circle cx="0" cy="0" r="28" fill="url(#gearMetal)" stroke="#9ca3af" strokeWidth="1"/>
+                        {/* Inner Rim (Depth) */}
+                        <circle cx="0" cy="0" r="18" fill="transparent" stroke="url(#gearInner)" strokeWidth="4" />
+                        {/* Hole */}
+                        <circle cx="0" cy="0" r="12" fill="#F3F4F6" /> {/* Background color match */}
+                    </g>
+
+                    {/* Small Gear Group */}
+                    <g transform="translate(75, 75)">
+                         {/* Teeth - 6 rects rotated */}
+                        {[0, 60, 120, 180, 240, 300].map(deg => (
+                            <rect key={deg} x="-5" y="-24" width="10" height="48" rx="2" fill="url(#gearMetal)" transform={`rotate(${deg})`} />
+                        ))}
+                        <circle cx="0" cy="0" r="18" fill="url(#gearMetal)" stroke="#9ca3af" strokeWidth="1"/>
+                        <circle cx="0" cy="0" r="10" fill="transparent" stroke="url(#gearInner)" strokeWidth="3" />
+                        <circle cx="0" cy="0" r="6" fill="#F3F4F6" />
+                    </g>
+                </svg>
+            </div>
+        );
+
+        // --- NOVO COMPONENTE: Ícone de Casa 3D (Estilo Cartoon Realista) ---
+        const HomeIcon3D = () => (
+            <div className="relative w-12 h-12 group cursor-pointer transition-transform hover:-translate-y-0.5 active:translate-y-0 -m-1">
+                {/* Sombra base */}
+                <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-8 h-2 bg-slate-900/20 blur-sm rounded-full"></div>
+
+                {/* Chaminé */}
+                <div className="absolute top-[18%] right-[22%] w-[12%] h-[20%] bg-gradient-to-b from-red-400 to-red-600 rounded-sm z-0 shadow-sm border border-red-700/10">
+                     <div className="absolute -top-[3px] -left-[2px] w-[140%] h-[5px] bg-red-500 rounded-full shadow-sm"></div>
+                </div>
+
+                {/* Corpo da Casa */}
+                <div className="absolute bottom-[10%] left-[20%] w-[60%] h-[50%] bg-gradient-to-b from-white to-slate-100 rounded-lg shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_2px_4px_rgba(0,0,0,0.05)] z-10 flex justify-center items-end border border-slate-200/50">
+                    {/* Porta */}
+                    <div className="w-[40%] h-[75%] bg-gradient-to-b from-orange-400 to-orange-500 rounded-t-[6px] relative shadow-inner mb-0 border-t border-x border-white/20">
+                        {/* Maçaneta */}
+                        <div className="absolute top-[55%] left-[15%] w-1.5 h-1.5 bg-white rounded-full shadow-sm"></div>
+                    </div>
+                </div>
+
+                {/* Telhado */}
+                <div className="absolute top-[8%] left-[8%] w-[84%] h-[50%] z-20 pointer-events-none drop-shadow-lg">
+                     <svg viewBox="0 0 100 60" className="w-full h-full overflow-visible">
+                        {/* Base Shadow/Darker part of tube */}
+                        <path d="M10 50 L50 15 L90 50" fill="none" stroke="#b91c1c" strokeWidth="16" strokeLinecap="round" strokeLinejoin="round" />
+                        {/* Main Red Color */}
+                        <path d="M10 48 L50 13 L90 48" fill="none" stroke="#ef4444" strokeWidth="16" strokeLinecap="round" strokeLinejoin="round" />
+                        {/* Highlight */}
+                        <path d="M10 48 L50 13 L90 48" fill="none" stroke="#fca5a5" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" className="opacity-40 translate-y-[-2px]" />
+                     </svg>
+                </div>
+            </div>
+        );
+
+        // --- NOVO COMPONENTE: Ícone de Carteira 3D (Estilo Cartoon Realista) ---
+        const WalletIcon3D = () => (
+            <div className="relative w-12 h-12 group cursor-pointer transition-transform hover:-translate-y-0.5 active:translate-y-0">
+                {/* Shadow */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-3 bg-blue-900/20 blur-md rounded-full"></div>
+
+                {/* Green Cards sticking out */}
+                <div className="absolute top-1 left-2 w-8 h-6 bg-emerald-500 rounded-md transform -rotate-6 border-t border-emerald-300"></div>
+                <div className="absolute top-2 left-3 w-8 h-6 bg-green-400 rounded-md transform -rotate-3 border-t border-green-200 shadow-sm"></div>
+
+                {/* Wallet Main Body */}
+                <div className="absolute top-4 left-1 w-10 h-8 bg-gradient-to-b from-amber-700 to-amber-900 rounded-xl shadow-lg border-t border-amber-600/50">
+                    {/* Flap/Fold line visual */}
+                    <div className="absolute top-0 right-0 w-4 h-full bg-black/10 rounded-r-xl"></div>
+                </div>
+                
+                {/* Wallet Flap/Strap */}
+                <div className="absolute top-6 right-0 w-3 h-4 bg-amber-800 rounded-r-md shadow-sm flex items-center justify-center translate-x-1">
+                     <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full shadow-sm"></div>
+                </div>
+
+                {/* Coin */}
+                <div className="absolute bottom-0 right-0 w-6 h-6 bg-gradient-to-br from-yellow-300 via-yellow-500 to-yellow-600 rounded-full shadow-lg border-2 border-yellow-200 flex items-center justify-center z-10">
+                    <span className="text-yellow-800 font-bold text-[10px]">$</span>
+                </div>
+            </div>
+        );
+
         // --- Componente Principal ---
         const App = () => {
-            // States
             const [expenses, setExpenses] = useState([]);
             const [settings, setSettings] = useState(DEFAULT_SETTINGS);
             const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -637,27 +1023,20 @@
             const [filterDate, setFilterDate] = useState('');
             const [currentView, setCurrentView] = useState('dashboard');
             
-            // Calendar Checklist State moved to App for reminder logic
             const [calendarChecks, setCalendarChecks] = useState(() => {
                 const saved = localStorage.getItem('odoo_calendar_checks');
                 return saved ? JSON.parse(saved) : {};
             });
 
-            // Reminder Modal State
             const [showReminder, setShowReminder] = useState(false);
             const [pendingItems, setPendingItems] = useState([]);
             
-            // Ref for file input
             const fileInputRef = useRef(null);
             
-            // Modal States
             const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
             const [passwordInput, setPasswordInput] = useState('');
-            
-            // Delete Modal State
             const [deleteModalState, setDeleteModalState] = useState({ open: false, step: 1, id: null });
             
-            // Form States
             const [editingId, setEditingId] = useState(null);
             const [date, setDate] = useState(getTodayLocal());
             const [description, setDescription] = useState('');
@@ -666,7 +1045,10 @@
             const [amount, setAmount] = useState('');
             const [notes, setNotes] = useState('');
 
-            // --- Effects ---
+            // --- NOVO STATE PARA MODAL DE BACKUP ---
+            const [showBackupOptions, setShowBackupOptions] = useState(false);
+
+            // --- Effects (MANTIDO) ---
             useEffect(() => {
                 const saved = localStorage.getItem('odoo_fast_expenses');
                 if (saved) setExpenses(JSON.parse(saved));
@@ -683,9 +1065,7 @@
             useEffect(() => { localStorage.setItem('odoo_fast_settings', JSON.stringify(settings)); }, [settings]);
             useEffect(() => { localStorage.setItem('odoo_calendar_checks', JSON.stringify(calendarChecks)); }, [calendarChecks]);
 
-            // --- Inicialização de Segurança e Áudio ---
             useEffect(() => {
-                // Confirmação ao sair
                 const handleBeforeUnload = (e) => {
                     const message = "Atenção: Você efetuou todos os lançamentos do dia e enviou o relatório?";
                     e.preventDefault();
@@ -693,10 +1073,8 @@
                     return message;
                 };
 
-                // Desbloqueio de Áudio na primeira interação
                 const unlockAudio = () => {
                     initAudioContext();
-                    // Remove o listener após a primeira interação para não pesar
                     window.removeEventListener('click', unlockAudio);
                     window.removeEventListener('keydown', unlockAudio);
                     window.removeEventListener('touchstart', unlockAudio);
@@ -715,140 +1093,103 @@
                 };
             }, []);
 
-            // --- Helper de Som de Notificação ---
             const playNotificationSound = () => {
-                // Tenta tocar o MP3
                 const audio = new Audio('hey_listen.mp3');
-                
                 const playPromise = audio.play();
-
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
-                        console.warn("Autoplay bloqueado ou arquivo não encontrado. Tentando som sintético.", error);
+                        console.warn("Autoplay bloqueado.", error);
                         playSynthesizedBeep();
                     });
                 }
             };
 
-            // Som Sintético (Backup Robusto)
             const playSynthesizedBeep = () => {
                 try {
-                    const ctx = initAudioContext(); // Usa o contexto global inicializado
+                    const ctx = initAudioContext();
                     if (!ctx) return;
-                    
                     const playTone = (freq, startTime, duration, type = 'sine') => {
                         const osc = ctx.createOscillator();
                         const gain = ctx.createGain();
-                        
                         osc.connect(gain);
                         gain.connect(ctx.destination);
-                        
                         osc.type = type;
                         osc.frequency.value = freq;
-                        
-                        gain.gain.setValueAtTime(0.3, startTime); // Volume um pouco mais alto
+                        gain.gain.setValueAtTime(0.3, startTime);
                         gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-                        
                         osc.start(startTime);
                         osc.stop(startTime + duration);
                     };
-
                     const now = ctx.currentTime;
-                    // Sequência de alerta "Ding-Dong-Ding"
-                    playTone(880, now, 0.2, 'triangle');        // A5
-                    playTone(587.33, now + 0.25, 0.4, 'sine');  // D5
-                    playTone(880, now + 0.7, 0.2, 'triangle');  // A5
-                    
-                } catch (error) {
-                    console.error("Erro fatal no áudio:", error);
-                }
+                    playTone(880, now, 0.2, 'triangle');
+                    playTone(587.33, now + 0.25, 0.4, 'sine');
+                    playTone(880, now + 0.7, 0.2, 'triangle');
+                } catch (error) {}
             };
 
-            // --- Reminder Logic (Verifica a cada 30min) ---
             const checkPendingPayments = () => {
                 const now = new Date();
                 const currentDay = now.getDate();
                 const month = now.getMonth();
                 const year = now.getFullYear();
 
-                // Verifica todas as notificações fixas do mês até o dia atual
                 const pending = FIXED_NOTIFICATIONS.filter(task => {
-                    // Verifica se a tarefa se aplica ao mês atual (ex: IPTU)
                     if (task.months && !task.months.includes(month)) return false;
-
-                    // Se o dia da tarefa for maior que hoje, ainda não venceu (não alerta)
                     if (task.day > currentDay) return false;
-
                     const key = `${year}-${month}-${task.description}`;
-                    // Retorna true se NÃO estiver marcado (pendente)
                     return !calendarChecks[key];
                 });
 
                 if (pending.length > 0) {
                     setPendingItems(pending);
                     setShowReminder(true);
-                    playNotificationSound(); // Dispara o som imediatamente na abertura
+                    playNotificationSound();
                 }
             };
 
-            // --- Efeito de Notificação: Aba Piscante e Som Repetitivo ---
             useEffect(() => {
                 let titleIntervalId;
                 let soundIntervalId;
 
                 if (showReminder) {
                     let isAlert = true;
-                    
-                    // 1. Título Piscante na Aba (a cada 1 segundo)
                     titleIntervalId = setInterval(() => {
                         document.title = isAlert ? `(${pendingItems.length}) 🔴 PAGAR AGORA!` : "🔔 Atenção - Despesas";
                         isAlert = !isAlert;
                     }, 1000);
-
-                    // 2. Som Repetitivo (a cada 15 segundos)
                     soundIntervalId = setInterval(() => {
                         playNotificationSound();
-                    }, 15000); // 15000 ms = 15 segundos
-
+                    }, 15000);
                 } else {
-                    // Restaura o título original quando o alerta fecha
-                    document.title = "Relatório de Despesas Odoo";
+                    document.title = "Relatório de Despesas Miplace";
                 }
 
-                // Limpeza ao fechar o alerta ou desmontar
                 return () => {
                     clearInterval(titleIntervalId);
                     clearInterval(soundIntervalId);
-                    document.title = "Relatório de Despesas Odoo";
+                    document.title = "Relatório de Despesas Miplace";
                 };
             }, [showReminder, pendingItems]);
 
             useEffect(() => {
-                // Pequeno delay inicial para garantir carregamento
-                const timer = setTimeout(() => {
-                    checkPendingPayments();
-                }, 2000);
+                const timer = setTimeout(() => { checkPendingPayments(); }, 2000);
+                const interval = setInterval(checkPendingPayments, 30 * 60 * 1000);
+                return () => { clearTimeout(timer); clearInterval(interval); };
+            }, [calendarChecks]);
 
-                const interval = setInterval(checkPendingPayments, 30 * 60 * 1000); // 30 minutos
-                return () => {
-                    clearTimeout(timer);
-                    clearInterval(interval);
-                };
-            }, [calendarChecks]); // Re-verifica se calendarChecks mudar
-
-            // --- Notification Helper ---
             const showToast = (message, type = 'success') => {
                 const id = Date.now();
                 setToasts(prev => [...prev, { id, message, type }]);
                 setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
             };
 
-            // --- Handlers ---
+            // --- Handlers (MANTIDO) ---
             const handleCalendarCheckToggle = (key, status) => {
                 setCalendarChecks(prev => ({ ...prev, [key]: status }));
             };
 
-            const handleBackup = async () => {
+            // --- FUNÇÃO DE BACKUP LOCAL (Antigo handleBackup) ---
+            const saveToComputer = async () => {
                 const dataStr = JSON.stringify(expenses, null, 2);
                 const fileName = `backup_despesas_${formatDateBR(getTodayLocal()).replace(/\//g, '-')}.json`;
 
@@ -856,19 +1197,15 @@
                     try {
                         const handle = await window.showSaveFilePicker({
                             suggestedName: fileName,
-                            types: [{
-                                description: 'Arquivo de Backup JSON',
-                                accept: { 'application/json': ['.json'] },
-                            }],
+                            types: [{ description: 'Arquivo de Backup JSON', accept: { 'application/json': ['.json'] }, }],
                         });
                         const writable = await handle.createWritable();
                         await writable.write(dataStr);
                         await writable.close();
                         showToast("Backup salvo no local selecionado!", "success");
+                        setShowBackupOptions(false);
                         return;
-                    } catch (err) {
-                        if (err.name === 'AbortError') return;
-                    }
+                    } catch (err) { if (err.name === 'AbortError') return; }
                 }
 
                 const blob = new Blob([dataStr], { type: "application/json" });
@@ -880,16 +1217,76 @@
                 link.click();
                 document.body.removeChild(link);
                 showToast("Backup salvo na pasta Downloads!", "success");
+                setShowBackupOptions(false);
             };
 
-            const triggerRestore = () => {
-                fileInputRef.current.click();
+            // --- NOVA FUNÇÃO: SALVAR NA NUVEM (FIREBASE) ---
+            const saveToCloud = async () => {
+                if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
+                    showToast("Configure seu nome nas configurações antes de salvar na nuvem!", "error");
+                    return;
+                }
+
+                try {
+                    await db.collection('backups').add({
+                        user: settings.employeeName,
+                        date: new Date(),
+                        data: expenses,
+                        formattedDate: formatDateBR(getTodayLocal())
+                    });
+                    showToast("Backup salvo na nuvem com sucesso!", "success");
+                    setShowBackupOptions(false);
+                } catch (error) {
+                    console.error("Erro ao salvar no Firebase:", error);
+                    showToast("Erro ao conectar com a nuvem.", "error");
+                }
             };
+            
+            // --- NOVA FUNÇÃO: RESTAURAR DA NUVEM (FIREBASE) ---
+            const handleCloudRestore = async () => {
+                if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
+                    showToast("Configure seu nome para buscar seus backups!", "error");
+                    return;
+                }
+
+                try {
+                    const snapshot = await db.collection('backups')
+                        .where('user', '==', settings.employeeName)
+                        .orderBy('date', 'desc')
+                        .limit(1)
+                        .get();
+
+                    if (snapshot.empty) {
+                        showToast("Nenhum backup encontrado para este usuário.", "info");
+                        return;
+                    }
+
+                    const doc = snapshot.docs[0].data();
+                    if (doc.data && Array.isArray(doc.data)) {
+                        if (confirm(`Restaurar backup de ${new Date(doc.date.seconds * 1000).toLocaleString()}? Isso substituirá os dados atuais.`)) {
+                            setExpenses(doc.data);
+                            showToast("Dados restaurados da nuvem!", "success");
+                            setIsSettingsOpen(false);
+                        }
+                    } else {
+                        showToast("Formato de dados inválido na nuvem.", "error");
+                    }
+                } catch (error) {
+                    console.error("Erro ao restaurar:", error);
+                    showToast("Erro ao buscar backup na nuvem.", "error");
+                }
+            };
+
+            // --- Handler Modificado para abrir Modal de Opções ---
+            const handleBackupClick = () => {
+                setShowBackupOptions(true);
+            };
+
+            const triggerRestore = () => { fileInputRef.current.click(); };
 
             const handleRestoreFile = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     try {
@@ -900,18 +1297,13 @@
                                 showToast("Dados restaurados com sucesso!");
                                 setIsSettingsOpen(false);
                             }
-                        } else {
-                            showToast("Arquivo de backup inválido", "error");
-                        }
-                    } catch (err) {
-                        showToast("Erro ao ler arquivo", "error");
-                    }
+                        } else { showToast("Arquivo de backup inválido", "error"); }
+                    } catch (err) { showToast("Erro ao ler arquivo", "error"); }
                 };
                 reader.readAsText(file);
                 e.target.value = '';
             };
 
-            // --- Form Handlers ---
             const handleAmountChange = (e) => {
                 let val = e.target.value.replace(/\D/g, '');
                 if (!val) { setAmount(''); return; }
@@ -933,12 +1325,10 @@
                     setIsSettingsOpen(true);
                     return;
                 }
-
                 if (!description || !amount || !category || !store) {
                     showToast("Preencha todos os campos obrigatórios", "error");
                     return;
                 }
-
                 const totalVal = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
                 if (isNaN(totalVal) || totalVal <= 0) {
                     showToast("Valor inválido", "error");
@@ -962,7 +1352,6 @@
                     } else {
                         entries.push({ s: store, v: totalVal });
                     }
-
                     const newItems = entries.map(ent => ({
                         id: crypto.randomUUID(),
                         date, description, category, notes,
@@ -972,7 +1361,6 @@
                         employeeName: settings.employeeName,
                         originalTotal: entries.length > 1 ? totalVal : null
                     }));
-
                     setExpenses(prev => [...newItems, ...prev]);
                     showToast(entries.length > 1 ? `${entries.length} despesas geradas com sucesso!` : "Despesa adicionada com sucesso!");
                     resetForm();
@@ -1004,15 +1392,9 @@
                 if (currentView === 'calendar') setCurrentView('dashboard');
             };
 
-            const cancelEdit = () => {
-                resetForm();
-                showToast("Edição cancelada", "info");
-            };
+            const cancelEdit = () => { resetForm(); showToast("Edição cancelada", "info"); };
 
-            // --- Delete Handlers ---
-            const confirmDeleteExpense = (id) => {
-                setDeleteModalState({ open: true, step: 1, id });
-            };
+            const confirmDeleteExpense = (id) => { setDeleteModalState({ open: true, step: 1, id }); };
 
             const handleDeleteStep = () => {
                 if (deleteModalState.step === 1) {
@@ -1024,9 +1406,7 @@
                 }
             };
 
-            const closeDeleteModal = () => {
-                setDeleteModalState({ open: false, step: 1, id: null });
-            };
+            const closeDeleteModal = () => { setDeleteModalState({ open: false, step: 1, id: null }); };
 
             const confirmClearAll = () => {
                 if (passwordInput === "#Banana@10") {
@@ -1034,22 +1414,17 @@
                     setIsPasswordModalOpen(false);
                     setPasswordInput('');
                     showToast("Todos os dados foram apagados", "success");
-                } else {
-                    showToast("Senha incorreta", "error");
-                }
+                } else { showToast("Senha incorreta", "error"); }
             };
 
-            // --- Export ---
             const exportToCSV = () => {
                 if (expenses.length === 0) return showToast("Nada para exportar", "error");
-                
                 const headers = ["date", "name", "store_name", "product_id", "unit_amount", "quantity", "description", "employee_id"];
                 const rows = expenses.map(ex => [
                     formatDateBR(ex.date), ex.description, ex.store, ex.category,
                     formatCurrency(ex.amount), ex.quantity, ex.notes, 
                     ex.employeeName || settings.employeeName
                 ]);
-
                 const csvContent = "\uFEFF" + [headers.join(';'), ...rows.map(r => r.map(f => `"${String(f).replace(/"/g, '""')}"`).join(';'))].join('\n');
                 const url = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
                 const link = document.createElement('a');
@@ -1061,7 +1436,7 @@
                 showToast("Arquivo CSV gerado!");
             };
 
-            // --- Calculations & Filtering ---
+            // --- Calculations & Filtering (MANTIDO) ---
             const filteredExpenses = useMemo(() => {
                 let filtered = expenses;
                 if (filterDate) {
@@ -1086,66 +1461,69 @@
                     if (!groups[key]) groups[key] = [];
                     groups[key].push(ex);
                 });
-                
                 const sortedKeys = Object.keys(groups).sort((a, b) => {
                     if (groupBy === 'date') return b.localeCompare(a); 
                     return a.localeCompare(b); 
                 });
-
                 return sortedKeys.map(key => ({
-                    key,
-                    items: groups[key],
-                    total: groups[key].reduce((sum, item) => sum + item.amount, 0)
+                    key, items: groups[key], total: groups[key].reduce((sum, item) => sum + item.amount, 0)
                 }));
             }, [filteredExpenses, groupBy]);
 
             const totalsByStore = useMemo(() => {
                 const acc = {};
-                filteredExpenses.forEach(ex => {
-                    acc[ex.store] = (acc[ex.store] || 0) + ex.amount;
-                });
+                filteredExpenses.forEach(ex => { acc[ex.store] = (acc[ex.store] || 0) + ex.amount; });
                 return acc;
             }, [filteredExpenses]);
             
             const totalGeneral = filteredExpenses.reduce((sum, ex) => sum + ex.amount, 0);
 
             return (
-                <div className="min-h-screen bg-slate-50 font-sans pb-20 print:bg-white print:pb-0">
+                <div className="pb-20 print:pb-0 min-h-screen">
                     <ToastContainer toasts={toasts} removeToast={id => setToasts(p => p.filter(t => t.id !== id))} />
 
-                    {/* Navbar */}
-                    <div className="bg-odoo-600 text-white shadow-lg sticky top-0 z-20 no-print backdrop-blur-md bg-opacity-95">
-                        <div className="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-white/10 rounded-lg"><Icons.FileSpreadsheet className="w-5 h-5" /></div>
-                                <div>
-                                    <h1 className="font-bold text-lg leading-tight flex items-center gap-2">
-                                        Despesas Odoo
-                                        <button 
-                                            onClick={() => setCurrentView(currentView === 'dashboard' ? 'calendar' : 'dashboard')} 
-                                            className={`ml-2 p-1.5 rounded-full transition-colors ${currentView === 'calendar' ? 'bg-white text-odoo-600 hover:bg-slate-100' : 'bg-odoo-500/50 hover:bg-odoo-500 text-white'}`}
-                                            title={currentView === 'dashboard' ? "Ver Calendário" : "Voltar para Lista"}
-                                        >
-                                            {currentView === 'dashboard' ? <Icons.Calendar className="w-4 h-4" /> : <Icons.Home className="w-4 h-4" />}
-                                        </button>
-                                    </h1>
-                                    <p className="text-xs text-odoo-50 opacity-80">Registro Profissional</p>
+                    {/* Navbar Flutuante Liquid */}
+                    <div className="sticky top-0 z-50 no-print px-4 py-4">
+                        <div className="max-w-5xl mx-auto">
+                            <div className="glass-panel p-3 px-5 flex justify-between items-center rounded-2xl">
+                                <div className="flex items-center gap-4">
+                                    <WalletIcon3D />
+                                    <div className="flex flex-col justify-center">
+                                        <div className="flex items-center gap-3">
+                                            <h1 className="font-bold text-slate-800 text-xl leading-tight">
+                                                Despesas Miplace
+                                            </h1>
+                                            <button 
+                                                onClick={() => setCurrentView(currentView === 'dashboard' ? 'calendar' : 'dashboard')} 
+                                                className="focus:outline-none transition-transform active:scale-95 flex items-center justify-center"
+                                                title={currentView === 'dashboard' ? "Ver Calendário" : "Voltar para Lista"}
+                                            >
+                                                {currentView === 'dashboard' ? (
+                                                    <CalendarIcon3D />
+                                                ) : (
+                                                    <HomeIcon3D />
+                                                )}
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">Registro Profissional</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button onClick={handleBackup} className="p-2 hover:bg-white/10 rounded-full transition-colors" title="Salvar Backup">
-                                    <Icons.Save className="w-5 h-5" />
-                                </button>
-                                <button onClick={() => setIsSettingsOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors" title="Configurações">
-                                    <Icons.Settings className="w-5 h-5" />
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    {/* Botão de Backup modificado para abrir modal */}
+                                    <button onClick={handleBackupClick} className="focus:outline-none transition-transform active:scale-95 p-1" title="Salvar Backup">
+                                        <FloppyDiskIcon3D />
+                                    </button>
+                                    <button onClick={() => setIsSettingsOpen(true)} className="focus:outline-none transition-transform active:scale-95 p-1" title="Configurações">
+                                        <SettingsIcon3D />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="max-w-5xl mx-auto p-4 space-y-6">
+                    <div className="max-w-5xl mx-auto px-6 space-y-8 mt-4">
                         
-                        {/* CONDITIONAL VIEW RENDERING */}
+                        {/* VIEW CALENDÁRIO */}
                         {currentView === 'calendar' ? (
                             <ExpenseCalendar 
                                 checkedState={calendarChecks} 
@@ -1154,96 +1532,120 @@
                             />
                         ) : (
                             <>
-                                {/* Dashboard Resumido */}
+                                {/* Dashboard Cards - Estilo Liquid Glass - ORDENADO POR MAIOR GASTO */}
                                 {expenses.length > 0 && (
-                                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 no-print fade-in">
-                                        {Object.entries(totalsByStore).map(([storeName, val]) => (
-                                            <div key={storeName} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col">
-                                                <span className="text-[10px] uppercase font-bold text-slate-400 truncate">{storeName}</span>
-                                                <span className="text-sm font-bold text-slate-700">{settings.currency} {formatCurrency(val)}</span>
-                                                <div className={`h-1 w-full mt-2 rounded-full ${getStoreColorClass(storeName).split(' ')[0].replace('bg-', 'bg-')}`}></div>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 no-print fade-in">
+                                        {Object.entries(totalsByStore)
+                                            .sort((a, b) => b[1] - a[1]) // Maior gasto primeiro
+                                            .map(([storeName, val]) => (
+                                            <div key={storeName} className="glass-panel p-4 rounded-2xl hover:translate-y-[-4px] transition-transform duration-300">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <img src={STORE_IMAGES[storeName] || STORE_IMAGES["default"]} alt={storeName} className="w-6 h-6 rounded-full" />
+                                                    <span className="text-[10px] uppercase font-bold text-slate-400 truncate block tracking-wide">{storeName}</span>
+                                                </div>
+                                                <span className="text-xl font-bold text-slate-700 block mb-3">{settings.currency} {formatCurrency(val)}</span>
+                                                {/* BARRA COLORIDA PERSONALIZADA */}
+                                                <div className={`h-1.5 w-full rounded-full bg-gradient-to-r opacity-80 ${getStoreBarColor(storeName)}`}></div>
                                             </div>
                                         ))}
                                     </div>
                                 )}
 
-                                {/* Formulário Principal */}
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden no-print">
-                                    <div className={`h-1.5 w-full ${editingId ? 'bg-orange-500' : 'bg-odoo-500'}`}></div>
-                                    <div className="p-6">
-                                        <div className="flex justify-between items-center mb-6">
-                                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                                {editingId ? <Icons.Edit className="w-5 h-5 text-orange-500"/> : <Icons.Plus className="w-5 h-5 text-odoo-500"/>}
+                                {/* Formulário - Estilo Liquid */}
+                                <div className="glass-panel rounded-3xl overflow-hidden no-print">
+                                    <div className="p-8">
+                                        <div className="flex justify-between items-center mb-8">
+                                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-4">
+                                                {editingId ? (
+                                                    <div className="p-2.5 rounded-xl shadow-md bg-orange-100 text-orange-600">
+                                                        <Icons.Edit className="w-6 h-6"/>
+                                                    </div>
+                                                ) : (
+                                                    <FastForwardIcon3D />
+                                                )}
                                                 {editingId ? "Editar Lançamento" : "Novo Lançamento"}
                                             </h2>
                                             {editingId && (
-                                                <button onClick={cancelEdit} className="text-xs font-medium text-slate-500 hover:text-slate-700 underline">
-                                                    Cancelar Edição
+                                                <button onClick={cancelEdit} className="bg-white/50 border border-white/60 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-red-500 transition-colors">
+                                                    Cancelar
                                                 </button>
                                             )}
                                         </div>
 
-                                        <form onSubmit={handleSubmit} className="space-y-5">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <form onSubmit={handleSubmit} className="space-y-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 {/* Data */}
-                                                <div className="space-y-1.5">
-                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Data</label>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Data</label>
                                                     <DateInput 
                                                         required 
                                                         value={date} 
                                                         onChange={e => setDate(e.target.value)}
-                                                        className="w-full pl-3 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 focus:border-odoo-500 outline-none transition-all text-slate-700 font-medium" 
+                                                        className="liquid-input w-full px-5 py-3.5 rounded-xl text-slate-700 font-semibold" 
                                                     />
                                                 </div>
 
                                                 {/* Categoria */}
-                                                <div className="space-y-1.5">
-                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Categoria</label>
-                                                    <select required value={category} onChange={e => setCategory(e.target.value)}
-                                                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all">
-                                                        <option value="" disabled>Selecione...</option>
-                                                        {settings.categories.map((c, i) => <option key={i} value={c.label}>{c.label}</option>)}
-                                                    </select>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Categoria</label>
+                                                    <div className="relative group">
+                                                        <select required value={category} onChange={e => setCategory(e.target.value)}
+                                                            className="liquid-input w-full px-5 py-3.5 rounded-xl appearance-none text-slate-700 font-semibold cursor-pointer">
+                                                            <option value="" disabled>Selecione...</option>
+                                                            {settings.categories.map((c, i) => <option key={i} value={c.label}>{c.label}</option>)}
+                                                        </select>
+                                                        <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-blue-500 transition-colors">
+                                                            <Icons.Tag className="w-4 h-4" />
+                                                        </div>
+                                                    </div>
                                                 </div>
 
                                                 {/* Descrição */}
-                                                <div className="space-y-1.5 md:col-span-2">
-                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Descrição</label>
+                                                <div className="space-y-2 md:col-span-2">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Descrição</label>
                                                     <input type="text" required placeholder="Ex: Café com cliente" value={description} onChange={e => setDescription(e.target.value)}
-                                                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all" />
+                                                        className="liquid-input w-full px-5 py-3.5 rounded-xl text-slate-700 font-semibold placeholder-slate-400" />
                                                 </div>
 
                                                 {/* Loja */}
-                                                <div className="space-y-1.5">
-                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Loja / Grupo</label>
-                                                    <select required value={store} onChange={e => setStore(e.target.value)}
-                                                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all">
-                                                        <option value="" disabled>Selecione...</option>
-                                                        {STORES_LIST.map((l, i) => <option key={i} value={l}>{l}</option>)}
-                                                    </select>
-                                                    {!editingId && store.includes("Piracicaba") && <p className="text-[11px] text-red-500 font-medium animate-pulse">* Divide por 3</p>}
-                                                    {!editingId && store.includes("Amparo") && <p className="text-[11px] text-pink-500 font-medium animate-pulse">* Divide por 2</p>}
-                                                    {!editingId && store === "Todas" && <p className="text-[11px] text-green-600 font-medium animate-pulse">* Divide por 5</p>}
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Loja / Grupo</label>
+                                                    <div className="relative group">
+                                                        <select required value={store} onChange={e => setStore(e.target.value)}
+                                                            className="liquid-input w-full px-5 py-3.5 rounded-xl appearance-none text-slate-700 font-semibold cursor-pointer">
+                                                            <option value="" disabled>Selecione...</option>
+                                                            {STORES_LIST.map((l, i) => <option key={i} value={l}>{l}</option>)}
+                                                        </select>
+                                                        <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-blue-500 transition-colors">
+                                                            <Icons.Store className="w-4 h-4" />
+                                                        </div>
+                                                    </div>
+                                                    {!editingId && store.includes("Piracicaba") && <p className="text-[10px] text-red-500 font-bold px-3 pt-1 animate-pulse">* Divide por 3</p>}
+                                                    {!editingId && store.includes("Amparo") && <p className="text-[10px] text-pink-500 font-bold px-3 pt-1 animate-pulse">* Divide por 2</p>}
+                                                    {!editingId && store === "Todas" && <p className="text-[10px] text-green-600 font-bold px-3 pt-1 animate-pulse">* Divide por 5</p>}
                                                 </div>
 
                                                 {/* Valor */}
-                                                <div className="space-y-1.5">
-                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Valor ({settings.currency})</label>
-                                                    <div className="relative">
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Valor ({settings.currency})</label>
+                                                    <div className="relative group">
                                                         <input type="text" inputMode="numeric" required placeholder="0,00" value={amount} onChange={handleAmountChange}
-                                                            className="w-full pl-3 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all font-mono text-lg font-bold text-slate-700" />
+                                                            className="liquid-input w-full pl-5 pr-12 py-3.5 rounded-xl text-slate-700 font-bold text-lg" />
+                                                         <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-blue-500 transition-colors">
+                                                            <Icons.DollarSign className="w-4 h-4" />
+                                                        </div>
                                                     </div>
                                                 </div>
 
                                                 {/* Obs */}
-                                                <div className="space-y-1.5 md:col-span-2">
-                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Observações (Opcional)</label>
+                                                <div className="space-y-2 md:col-span-2">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Observações (Opcional)</label>
                                                     <input type="text" value={notes} onChange={e => setNotes(e.target.value)}
-                                                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all text-sm" />
+                                                        className="liquid-input w-full px-5 py-3.5 rounded-xl text-slate-600 font-medium text-sm placeholder-slate-400" />
                                                 </div>
                                             </div>
 
-                                            <button type="submit" className={`w-full py-3.5 px-4 rounded-xl font-bold text-white shadow-lg transform transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${editingId ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-200' : 'bg-odoo-600 hover:bg-odoo-700 shadow-purple-200'}`}>
+                                            <button type="submit" className={`w-full py-4 px-6 rounded-full font-bold text-white text-base transform transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-4 ${editingId ? 'bg-gradient-to-r from-orange-400 to-amber-500 shadow-lg rounded-2xl' : 'liquid-btn-3d'}`}>
                                                 {editingId ? <Icons.Check className="w-5 h-5"/> : <Icons.Plus className="w-5 h-5"/>}
                                                 {editingId ? "Salvar Alterações" : "Adicionar Despesa"}
                                             </button>
@@ -1253,161 +1655,161 @@
 
                                 {/* Barra de Ações e Totais */}
                                 {expenses.length > 0 && (
-                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4 print:border-none print:shadow-none print:p-0 print:mb-6">
-                                        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                                            <div>
-                                                <p className="text-xs text-slate-400 uppercase font-bold mb-1 no-print">Total Geral</p>
-                                                <p className="text-3xl font-extrabold text-slate-800 tracking-tight">
-                                                    <span className="text-lg text-slate-400 font-normal mr-1">{settings.currency}</span>
+                                    <div className="glass-panel p-6 rounded-3xl flex flex-col gap-8 print:border-none print:shadow-none print:p-0 print:mb-6">
+                                        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                                            <div className="text-center md:text-left">
+                                                <p className="text-xs text-slate-400 uppercase font-bold mb-2 no-print tracking-widest">Total Geral</p>
+                                                <p className="text-4xl font-extrabold text-slate-800 tracking-tight drop-shadow-sm">
+                                                    <span className="text-xl text-slate-400 font-bold mr-1 align-top relative top-1">{settings.currency}</span>
                                                     {formatCurrency(totalGeneral)}
                                                 </p>
-                                                <p className="text-xs text-slate-400 mt-1 no-print">{filteredExpenses.length} registros</p>
+                                                <div className="mt-2 inline-block no-print">
+                                                     <span className="text-xs font-bold text-slate-500 bg-white/60 border border-white px-3 py-1 rounded-full shadow-sm">{filteredExpenses.length} registros</span>
+                                                </div>
                                             </div>
-                                            <div className="flex gap-3 w-full md:w-auto no-print">
-                                                <button onClick={() => setIsPasswordModalOpen(true)} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 py-2.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100 font-medium">
+                                            <div className="flex gap-4 w-full md:w-auto no-print">
+                                                <button onClick={() => setIsPasswordModalOpen(true)} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-5 py-3 bg-white/40 hover:bg-red-50 border border-white/60 hover:border-red-200 rounded-xl text-slate-500 hover:text-red-500 font-bold transition-all shadow-sm">
                                                     <Icons.Trash2 className="w-4 h-4" /> Limpar
                                                 </button>
-                                                <button onClick={() => window.print()} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 rounded-lg transition-all font-medium shadow-sm">
+                                                <button onClick={() => window.print()} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-5 py-3 bg-white/60 hover:bg-white border border-white/80 rounded-xl text-slate-600 font-bold transition-all shadow-sm">
                                                     <Icons.Printer className="w-4 h-4" /> Imprimir
                                                 </button>
-                                                <button onClick={exportToCSV} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all font-bold transform hover:-translate-y-0.5">
+                                                <button onClick={exportToCSV} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-200/50 font-bold transition-transform hover:-translate-y-0.5">
                                                     <Icons.Download className="w-4 h-4" /> Exportar
                                                 </button>
                                             </div>
                                         </div>
                                         
-                                        {/* Search Bar & Filters */}
-                                        <div className="flex flex-col md:flex-row gap-4 no-print items-end md:items-center">
-                                            <div className="relative flex-1 w-full">
-                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        {/* Filtros */}
+                                        <div className="flex flex-col md:flex-row gap-6 no-print items-end md:items-center bg-white/30 p-4 rounded-2xl border border-white/40">
+                                            <div className="relative flex-1 w-full group">
+                                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                                     <Icons.Search className="w-5 h-5 text-slate-400" />
                                                 </div>
                                                 <input 
                                                     type="text" 
-                                                    placeholder="Pesquisar descrição, loja, categoria..." 
+                                                    placeholder="Pesquisar..." 
                                                     value={searchTerm}
                                                     onChange={e => setSearchTerm(e.target.value)}
-                                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none transition-all text-sm"
+                                                    className="w-full pl-11 pr-4 py-2.5 bg-white/60 border border-white rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm font-medium text-slate-600 placeholder-slate-400"
                                                 />
                                             </div>
                                             
-                                            <div className="flex flex-wrap gap-2 w-full md:w-auto items-center">
-                                                {/* Date Filter Input */}
-                                                <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg relative">
+                                            <div className="flex flex-wrap gap-4 w-full md:w-auto items-center">
+                                                <div className="flex items-center gap-2 bg-white/60 p-1.5 rounded-xl border border-white shadow-sm relative">
                                                     <div className="w-32">
                                                         <DateInput 
                                                             value={filterDate} 
                                                             onChange={(e) => setFilterDate(e.target.value)}
-                                                            className="w-full bg-transparent text-xs font-bold text-slate-600 outline-none px-2 py-1.5 cursor-pointer rounded-md hover:bg-white focus:bg-white transition-colors"
+                                                            className="w-full bg-transparent text-xs font-bold text-slate-600 outline-none px-2 py-1 cursor-pointer rounded-lg hover:bg-white/50 transition-colors"
                                                             placeholder="Filtrar Data"
                                                         />
                                                     </div>
                                                     {filterDate && (
-                                                        <button onClick={() => setFilterDate('')} className="absolute right-[-8px] -top-2 bg-red-500 text-white rounded-full p-0.5 shadow-sm hover:bg-red-600 z-10">
+                                                        <button onClick={() => setFilterDate('')} className="absolute -right-2 -top-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 z-10 transition-transform hover:scale-110">
                                                             <Icons.X className="w-3 h-3"/>
                                                         </button>
                                                     )}
                                                 </div>
 
-                                                <div className="h-6 w-px bg-slate-300 mx-1 hidden md:block"></div>
+                                                <div className="h-6 w-px bg-slate-300 hidden md:block"></div>
 
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap">Agrupar:</span>
-                                                    <div className="flex bg-slate-100 p-1 rounded-lg">
-                                                        <button 
-                                                            onClick={() => setGroupBy('date')}
-                                                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${groupBy === 'date' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                                                        >
-                                                            Data
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => setGroupBy('store')}
-                                                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${groupBy === 'store' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                                                        >
-                                                            Loja
-                                                        </button>
-                                                    </div>
+                                                <div className="flex bg-white/60 p-1 rounded-xl border border-white shadow-sm">
+                                                    <button 
+                                                        onClick={() => setGroupBy('date')}
+                                                        className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${groupBy === 'date' ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`}
+                                                    >
+                                                        Data
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setGroupBy('store')}
+                                                        className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${groupBy === 'store' ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`}
+                                                    >
+                                                        Loja
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* LISTA DE DADOS - AGRUPADA POR DATA OU LOJA */}
+                                {/* LISTA DE DADOS - Visual Liquid */}
                                 {expenses.length > 0 && (
-                                    <div className="space-y-8 print:space-y-8">
+                                    <div className="space-y-8 print:space-y-6">
                                         {groupedExpenses.map(group => (
                                             <div key={group.key} className="print-break-inside-avoid">
-                                                {/* Cabeçalho do Grupo */}
-                                                <div className="flex items-end justify-between mb-3 px-1 border-b border-slate-300 pb-2">
-                                                    <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
-                                                        {groupBy === 'date' ? <Icons.Calendar className="w-5 h-5 text-odoo-500" /> : <Icons.Store className="w-5 h-5 text-odoo-500" />}
+                                                <div className="flex items-center justify-between mb-4 px-2">
+                                                    <h3 className="text-lg font-bold text-slate-700 flex items-center gap-3">
+                                                        <div className="bg-white/80 p-2 rounded-xl shadow-sm text-blue-500 border border-white">
+                                                            {groupBy === 'date' ? <Icons.Calendar className="w-5 h-5" /> : (
+                                                                <img src={STORE_IMAGES[group.key] || STORE_IMAGES["default"]} alt={group.key} className="w-5 h-5 rounded-full" />
+                                                            )}
+                                                        </div>
                                                         {groupBy === 'date' ? formatDateBR(group.key) : group.key}
                                                     </h3>
-                                                    <span className="text-sm font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
-                                                        Total: {settings.currency} {formatCurrency(group.total)}
+                                                    <span className="text-sm font-bold text-slate-600 bg-white/60 px-4 py-1.5 rounded-full border border-white shadow-sm">
+                                                        {settings.currency} {formatCurrency(group.total)}
                                                     </span>
                                                 </div>
 
-                                                {/* Tabela do Dia */}
-                                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border print:border-slate-300">
+                                                <div className="glass-panel rounded-2xl overflow-hidden print:shadow-none print:border print:border-slate-300 p-0">
                                                     <div className="overflow-x-auto max-h-[500px] overflow-y-auto print-scroll-fix">
-                                                        <table className="w-full text-left text-sm relative">
-                                                            <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+                                                        <table className="w-full text-left text-sm relative border-collapse">
+                                                            <thead className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-white">
                                                                 <tr>
-                                                                    {groupBy === 'date' && <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider bg-slate-50">Loja</th>}
-                                                                    <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider bg-slate-50">Funcionário</th>
-                                                                    <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider bg-slate-50">Categoria</th>
-                                                                    <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider bg-slate-50">Data</th>
-                                                                    <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider bg-slate-50">Descrição</th>
-                                                                    <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider text-right bg-slate-50">Valor</th>
-                                                                    <th className="px-5 py-3.5 font-bold text-slate-500 uppercase text-xs tracking-wider text-center no-print w-28 bg-slate-50">Ações</th>
+                                                                    {groupBy === 'date' && <th className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest">Loja</th>}
+                                                                    <th className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest">Quem</th>
+                                                                    <th className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest">Categoria</th>
+                                                                    <th className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest">Data</th>
+                                                                    <th className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest">Descrição</th>
+                                                                    <th className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest text-right">Valor</th>
+                                                                    <th className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest text-center no-print">Opções</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody className="divide-y divide-slate-100">
                                                                 {group.items.map((ex, idx) => (
-                                                                    <tr key={ex.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-blue-50/30 transition-colors group`}>
+                                                                    <tr key={ex.id} className="hover:bg-blue-50/40 transition-colors group">
                                                                         {groupBy === 'date' && (
-                                                                            <td className="px-5 py-3.5 whitespace-nowrap">
-                                                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold border ring-1 ring-inset ${getStoreColorClass(ex.store)}`}>
+                                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                                <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm border border-white/50 backdrop-blur-sm ${getStoreColorClass(ex.store)}`}>
                                                                                     {ex.store}
                                                                                 </span>
                                                                             </td>
                                                                         )}
-                                                                        <td className="px-5 py-3.5 text-slate-600 text-xs">{ex.employeeName || settings.employeeName}</td>
-                                                                        <td className="px-5 py-3.5 text-slate-600">{ex.category}</td>
-                                                                        <td className="px-5 py-3.5 whitespace-nowrap text-slate-600 font-medium text-xs">
+                                                                        <td className="px-6 py-4 text-slate-600 font-medium text-xs">{ex.employeeName || settings.employeeName}</td>
+                                                                        <td className="px-6 py-4 text-slate-600 text-xs font-medium"><span className="bg-white/60 border border-white px-2 py-1 rounded-md shadow-sm">{ex.category}</span></td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-slate-500 font-medium text-xs">
                                                                             {formatDateBR(ex.date)}
                                                                         </td>
-                                                                        <td className="px-5 py-3.5">
-                                                                            <div className="font-medium text-slate-800 whitespace-normal break-words max-w-[15ch] leading-tight print:print-w-15ch">
+                                                                        <td className="px-6 py-4">
+                                                                            <div className="font-semibold text-slate-700 leading-tight">
                                                                                 {ex.description}
                                                                             </div>
                                                                             {ex.notes && (
-                                                                                <div className="text-xs text-slate-400 mt-1 whitespace-normal break-words max-w-[15ch] leading-tight print:print-w-15ch">
+                                                                                <div className="text-xs text-slate-400 mt-1 italic">
                                                                                     {ex.notes}
                                                                                 </div>
                                                                             )}
                                                                         </td>
-                                                                        <td className="px-5 py-3.5 text-right font-bold text-slate-700 tabular-nums">
+                                                                        <td className="px-6 py-4 text-right font-bold text-slate-700 tabular-nums">
                                                                             <div className="flex flex-col items-end">
                                                                                 <span>{formatCurrency(ex.amount)}</span>
                                                                                 {ex.originalTotal && (
-                                                                                    <span className="text-[10px] text-slate-400 font-normal bg-slate-100 px-1 rounded whitespace-nowrap" title="Valor total antes da divisão">
-                                                                                        Total: {formatCurrency(ex.originalTotal)}
+                                                                                    <span className="text-[9px] text-slate-400 font-medium bg-white/80 px-1.5 py-0.5 rounded shadow-sm mt-1 border border-white">
+                                                                                        Orig: {formatCurrency(ex.originalTotal)}
                                                                                     </span>
                                                                                 )}
                                                                             </div>
                                                                         </td>
-                                                                        <td className="px-5 py-3.5 text-center no-print">
-                                                                            <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                                <button onClick={() => duplicateExpense(ex)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-colors" title="Duplicar">
+                                                                        <td className="px-6 py-4 text-center no-print">
+                                                                            <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-1 group-hover:translate-y-0">
+                                                                                <button onClick={() => duplicateExpense(ex)} className="p-1.5 text-slate-400 hover:text-blue-500 bg-white/50 hover:bg-white border border-transparent hover:border-blue-100 rounded-lg transition-all shadow-sm" title="Duplicar">
                                                                                     <Icons.Copy className="w-4 h-4" />
                                                                                 </button>
-                                                                                <button onClick={() => startEdit(ex)} className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-md transition-colors" title="Editar">
+                                                                                <button onClick={() => startEdit(ex)} className="p-1.5 text-slate-400 hover:text-orange-500 bg-white/50 hover:bg-white border border-transparent hover:border-orange-100 rounded-lg transition-all shadow-sm" title="Editar">
                                                                                     <Icons.Edit className="w-4 h-4" />
                                                                                 </button>
-                                                                                <button onClick={() => confirmDeleteExpense(ex.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors" title="Excluir">
+                                                                                <button onClick={() => confirmDeleteExpense(ex.id)} className="p-1.5 text-slate-400 hover:text-red-500 bg-white/50 hover:bg-white border border-transparent hover:border-red-100 rounded-lg transition-all shadow-sm" title="Excluir">
                                                                                     <Icons.Trash2 className="w-4 h-4" />
                                                                                 </button>
                                                                             </div>
@@ -1424,166 +1826,171 @@
                                 )}
                                 
                                 {expenses.length === 0 && (
-                                    <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-slate-200 no-print flex flex-col items-center justify-center text-slate-400">
-                                        <div className="bg-slate-50 p-4 rounded-full mb-3"><Icons.FileSpreadsheet className="w-8 h-8 opacity-50"/></div>
-                                        <p className="font-medium text-slate-500">Nenhuma despesa registrada.</p>
-                                        <p className="text-sm opacity-70">Preencha o formulário acima para começar.</p>
+                                    <div className="text-center py-24 rounded-3xl border-2 border-dashed border-slate-300/60 no-print flex flex-col items-center justify-center text-slate-400 bg-white/20 backdrop-blur-sm">
+                                        <div className="bg-white/60 p-6 rounded-full mb-4 shadow-liquid-glow"><Icons.FileSpreadsheet className="w-10 h-10 text-blue-300"/></div>
+                                        <p className="font-bold text-slate-600 text-lg">Tudo limpo por aqui.</p>
+                                        <p className="text-sm opacity-70 mt-1">Utilize o formulário acima para adicionar despesas.</p>
                                     </div>
                                 )}
                             </>
                         )}
                     </div>
 
-                    {/* Modal de Lembrete Recorrente */}
-                    {showReminder && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in no-print">
-                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden pulse-red relative">
-                                <div className="p-6">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                            <Icons.Bell className="w-5 h-5 text-red-600" />
+                    {/* Modais Globais (Reminder, Delete, Password, Settings) - VISUAL LIQUID */}
+
+                    {/* --- NOVO MODAL: OPÇÕES DE BACKUP --- */}
+                    {showBackupOptions && (
+                         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/20 backdrop-blur-md p-4 animate-in fade-in zoom-in no-print">
+                            <div className="glass-panel w-full max-w-sm overflow-hidden relative rounded-3xl shadow-2xl p-8 text-center">
+                                <div className="mx-auto w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-5 shadow-inner text-blue-500">
+                                    <Icons.Save className="w-7 h-7" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800 mb-2">Salvar Backup</h3>
+                                <p className="text-sm text-slate-500 mb-8 font-medium">Onde deseja salvar seus dados?</p>
+                                
+                                <div className="grid grid-cols-1 gap-3">
+                                    <button onClick={saveToComputer} className="group relative w-full py-4 bg-white/60 border border-white hover:bg-white hover:border-blue-200 text-slate-700 font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-3">
+                                        <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-blue-50 text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <Icons.HardDrive className="w-5 h-5" />
                                         </div>
-                                        <h3 className="text-lg font-bold text-slate-800 leading-tight">Pagamentos Pendentes!</h3>
+                                        <span className="flex-1 text-left">No Computador</span>
+                                        <Icons.Download className="w-4 h-4 text-slate-400 mr-2" />
+                                    </button>
+
+                                    <button onClick={saveToCloud} className="group relative w-full py-4 bg-white/60 border border-white hover:bg-white hover:border-emerald-200 text-slate-700 font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-3">
+                                        <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-emerald-50 text-slate-500 group-hover:text-emerald-500 transition-colors">
+                                            <Icons.CloudUpload className="w-5 h-5" />
+                                        </div>
+                                        <span className="flex-1 text-left">Na Nuvem (Firebase)</span>
+                                        <span className="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-md font-bold mr-2">Online</span>
+                                    </button>
+                                </div>
+
+                                <button onClick={() => setShowBackupOptions(false)} className="mt-6 text-slate-400 hover:text-slate-600 text-xs font-bold uppercase tracking-wider">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Reminder Modal */}
+                    {showReminder && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/20 backdrop-blur-md p-4 animate-in fade-in zoom-in no-print">
+                            <div className="glass-panel w-full max-w-sm overflow-hidden relative rounded-3xl shadow-2xl">
+                                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-400 to-orange-400"></div>
+                                <div className="p-8">
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-inner text-red-500">
+                                            <Icons.Bell className="w-6 h-6" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-slate-800 leading-tight">Pagamentos Pendentes!</h3>
                                     </div>
-                                    <p className="text-sm text-slate-600 mb-4">
-                                        Existem pagamentos fixos pendentes neste mês:
-                                    </p>
-                                    <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 mb-6 max-h-40 overflow-y-auto">
-                                        <ul className="space-y-2">
+                                    <div className="bg-white/50 rounded-2xl border border-white/60 p-4 mb-6 max-h-48 overflow-y-auto custom-scrollbar shadow-inner">
+                                        <ul className="space-y-3">
                                             {pendingItems.map((item, idx) => (
-                                                <li key={idx} className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                                                <li key={idx} className="flex items-center gap-3 text-sm font-semibold text-slate-700">
                                                     <Icons.AlertCircle className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                                                    {item.description} <span className="text-xs text-slate-400 ml-1">(Dia {item.day})</span>
+                                                    {item.description} <span className="text-xs text-slate-500 bg-white/80 px-2 py-0.5 rounded-md border border-slate-100 shadow-sm">Dia {item.day}</span>
                                                 </li>
                                             ))}
                                         </ul>
                                     </div>
-                                    
                                     <button 
-                                        onClick={() => {
-                                            setShowReminder(false);
-                                            setCurrentView('calendar'); // Leva o usuário para o calendário
-                                        }} 
-                                        className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2"
+                                        onClick={() => { setShowReminder(false); setCurrentView('calendar'); }} 
+                                        className="w-full py-3.5 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2 transform hover:scale-[1.02]"
                                     >
-                                        Ir para Calendário e Pagar <Icons.ChevronRight className="w-4 h-4" />
+                                        Resolver Agora <Icons.ChevronRight className="w-4 h-4" />
                                     </button>
-                                    <p className="text-[10px] text-center text-slate-400 mt-3">
-                                        Este alerta reaparecerá em 30 minutos se não for resolvido.
-                                    </p>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Modal Exclusão Unitária */}
+                    {/* Delete Modal */}
                     {deleteModalState.open && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in no-print">
-                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100">
-                                <div className="p-6 text-center">
-                                    <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4 ${deleteModalState.step === 1 ? 'bg-orange-100' : 'bg-red-100'}`}>
-                                        {deleteModalState.step === 1 ? <Icons.AlertTriangle className="w-6 h-6 text-orange-500"/> : <Icons.Trash2 className="w-6 h-6 text-red-600"/>}
-                                    </div>
-                                    <h3 className="text-lg font-bold text-slate-800 mb-2">
-                                        {deleteModalState.step === 1 ? "Confirmar Exclusão" : "Atenção!"}
-                                    </h3>
-                                    <p className="text-sm text-slate-600 mb-6 px-2">
-                                        {deleteModalState.step === 1 ? "Deseja realmente excluir este lançamento?" : "Os dados serão excluídos definitivamente. Está de acordo?"}
-                                    </p>
-                                    
-                                    <div className="flex gap-3">
-                                        <button onClick={closeDeleteModal} 
-                                            className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50">
-                                            Não
-                                        </button>
-                                        <button onClick={handleDeleteStep} 
-                                            className={`flex-1 py-2.5 text-white font-bold rounded-xl shadow-md ${deleteModalState.step === 1 ? 'bg-orange-500 hover:bg-orange-600' : 'bg-red-600 hover:bg-red-700'}`}>
-                                            Sim
-                                        </button>
-                                    </div>
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-md fade-in no-print">
+                            <div className="glass-panel w-full max-w-sm overflow-hidden transform transition-all scale-100 p-8 text-center rounded-3xl">
+                                <div className={`mx-auto w-14 h-14 rounded-2xl flex items-center justify-center mb-5 shadow-sm border border-white ${deleteModalState.step === 1 ? 'bg-orange-50 text-orange-500' : 'bg-red-50 text-red-500'}`}>
+                                    {deleteModalState.step === 1 ? <Icons.AlertTriangle className="w-7 h-7"/> : <Icons.Trash2 className="w-7 h-7"/>}
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800 mb-2">
+                                    {deleteModalState.step === 1 ? "Confirmar?" : "Atenção!"}
+                                </h3>
+                                <p className="text-sm text-slate-600 mb-8 px-2 leading-relaxed">
+                                    {deleteModalState.step === 1 ? "Deseja realmente excluir este lançamento?" : "Os dados serão excluídos definitivamente. Está de acordo?"}
+                                </p>
+                                <div className="flex gap-3">
+                                    <button onClick={closeDeleteModal} className="flex-1 py-3 bg-white/50 border border-white/60 text-slate-700 font-bold rounded-xl hover:bg-white/80 transition-colors">Não</button>
+                                    <button onClick={handleDeleteStep} className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5 ${deleteModalState.step === 1 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-red-500 hover:bg-red-600'}`}>Sim</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Modal Senha Seguro (Limpar Tudo) */}
+                    {/* Password/Clear All Modal */}
                     {isPasswordModalOpen && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in no-print">
-                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100">
-                                <div className="p-6 text-center">
-                                    <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                                        <Icons.Trash2 className="w-6 h-6 text-red-600" />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-slate-800 mb-2">Apagar Todos os Dados?</h3>
-                                    <p className="text-sm text-slate-500 mb-6">Esta ação não pode ser desfeita. Digite a senha de administrador para confirmar.</p>
-                                    
-                                    <input type="password" placeholder="Senha de segurança" autoFocus
-                                        value={passwordInput} onChange={e => setPasswordInput(e.target.value)}
-                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-center font-bold text-slate-800 mb-4" 
-                                    />
-                                    
-                                    <div className="flex gap-3">
-                                        <button onClick={() => { setIsPasswordModalOpen(false); setPasswordInput(''); }} 
-                                            className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50">
-                                            Cancelar
-                                        </button>
-                                        <button onClick={confirmClearAll} 
-                                            className="flex-1 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-md shadow-red-200">
-                                            Apagar Tudo
-                                        </button>
-                                    </div>
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-md fade-in no-print">
+                            <div className="glass-panel w-full max-w-sm overflow-hidden p-8 text-center rounded-3xl">
+                                <div className="mx-auto w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mb-5 rotate-12 shadow-sm border border-white text-red-500">
+                                    <Icons.Trash2 className="w-7 h-7" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800 mb-2">Apagar Tudo?</h3>
+                                <p className="text-sm text-slate-500 mb-6 font-medium">Digite a senha de administrador.</p>
+                                <input type="password" placeholder="Senha" autoFocus
+                                    value={passwordInput} onChange={e => setPasswordInput(e.target.value)}
+                                    className="liquid-input w-full px-5 py-3 rounded-xl text-center font-bold text-slate-700 mb-6 placeholder-slate-300" 
+                                />
+                                <div className="flex gap-3">
+                                    <button onClick={() => { setIsPasswordModalOpen(false); setPasswordInput(''); }} className="flex-1 py-3 bg-white/50 border border-white/60 text-slate-700 font-bold rounded-xl hover:bg-white/80 transition-colors">Cancelar</button>
+                                    <button onClick={confirmClearAll} className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 shadow-lg shadow-red-200 transition-colors">Apagar</button>
                                 </div>
                             </div>
                         </div>
                     )}
                     
-                    {/* Modal Settings */}
+                    {/* Settings Modal */}
                     {isSettingsOpen && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm no-print">
-                            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
-                                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-md no-print">
+                            <div className="glass-panel w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh] rounded-3xl border border-white/80 shadow-2xl">
+                                <div className="p-5 border-b border-white/60 flex justify-between items-center bg-white/40">
                                     <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                        <Icons.Settings className="w-5 h-5 text-odoo-500"/> Configurações & Backup
+                                        <div className="p-1.5 bg-blue-100/50 rounded-lg text-blue-600"><Icons.Settings className="w-5 h-5"/></div>
+                                        Configurações
                                     </h3>
-                                    <button onClick={() => setIsSettingsOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                    <button onClick={() => setIsSettingsOpen(false)} className="text-slate-400 hover:text-slate-600 bg-white/50 p-1.5 rounded-lg transition-colors">
                                         <Icons.X className="w-5 h-5" />
                                     </button>
                                 </div>
                                 
-                                <div className="p-6 space-y-6 overflow-y-auto">
-                                    {/* Preferências */}
+                                <div className="p-6 space-y-8 overflow-y-auto">
                                     <div className="space-y-3">
-                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Preferências</h4>
+                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Perfil</h4>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Funcionário <span className="text-red-500">*</span></label>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Nome do Funcionário <span className="text-red-500">*</span></label>
                                             <input type="text" value={settings.employeeName} onChange={e => setSettings({...settings, employeeName: e.target.value})} 
-                                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-odoo-500 outline-none" />
-                                            <p className="text-xs text-slate-400 mt-1">Nome obrigatório para realizar lançamentos.</p>
+                                                className="liquid-input w-full p-3.5 rounded-xl font-medium text-slate-700" />
                                         </div>
                                     </div>
 
-                                    {/* Dados */}
-                                    <div className="space-y-3 pt-3 border-t border-slate-100">
-                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Gerenciamento de Dados</h4>
-                                        <p className="text-xs text-slate-500 mb-2">Salve seus dados em um arquivo seguro para não perdê-los.</p>
+                                    <div className="space-y-3 pt-4 border-t border-slate-100">
+                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Dados & Backup</h4>
                                         
                                         <div className="grid grid-cols-1 gap-3">
-                                            <button onClick={triggerRestore} className="flex items-center justify-center gap-2 w-full py-2.5 bg-white text-slate-700 hover:bg-slate-50 font-medium rounded-lg border border-slate-200 transition-colors">
-                                                <Icons.Upload className="w-4 h-4" /> Restaurar Backup
+                                            <button onClick={triggerRestore} className="flex items-center justify-center gap-2 w-full py-3.5 bg-white/60 text-slate-600 hover:text-blue-600 hover:bg-white border border-white rounded-xl transition-all shadow-sm">
+                                                <Icons.Upload className="w-5 h-5" /> Restaurar Arquivo (PC)
                                             </button>
-                                            <input 
-                                                type="file" 
-                                                ref={fileInputRef} 
-                                                onChange={handleRestoreFile} 
-                                                accept=".json" 
-                                                className="hidden" 
-                                            />
+                                            <input type="file" ref={fileInputRef} onChange={handleRestoreFile} accept=".json" className="hidden" />
+
+                                            {/* NOVO BOTÃO: RESTAURAR DA NUVEM */}
+                                            <button onClick={handleCloudRestore} className="flex items-center justify-center gap-2 w-full py-3.5 bg-emerald-50 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 border border-emerald-100 rounded-xl transition-all shadow-sm">
+                                                <Icons.Cloud className="w-5 h-5" /> Baixar da Nuvem
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <div className="p-4 bg-slate-50 border-t border-slate-100">
-                                    <button onClick={() => setIsSettingsOpen(false)} className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg shadow-sm">
+                                <div className="p-5 bg-white/30 border-t border-white/60">
+                                    <button onClick={() => setIsSettingsOpen(false)} className="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">
                                         Concluir
                                     </button>
                                 </div>
