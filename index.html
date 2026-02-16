@@ -15,13 +15,12 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        // Paleta Liquid (Vibrante e translúcida)
                         liquid: {
-                            bg: '#F3F4F6',        // Cinza azulado muito claro
-                            text: '#1E293B',      // Slate 800
-                            primary: '#3B82F6',   // Azul vibrante
-                            secondary: '#8B5CF6', // Roxo vibrante
-                            accent: '#06B6D4',    // Ciano
+                            bg: '#F3F4F6',
+                            text: '#1E293B',
+                            primary: '#3B82F6',
+                            secondary: '#8B5CF6',
+                            accent: '#06B6D4',
                             glass: 'rgba(255, 255, 255, 0.7)',
                             glassDark: 'rgba(255, 255, 255, 0.4)',
                             border: 'rgba(255, 255, 255, 0.8)',
@@ -30,7 +29,7 @@
                     boxShadow: {
                         'liquid-card': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
                         'liquid-glow': '0 0 15px rgba(59, 130, 246, 0.5)',
-                        'liquid-highlight': 'inset 0 1px 0 rgba(255, 255, 255, 0.8)', // Brilho superior
+                        'liquid-highlight': 'inset 0 1px 0 rgba(255, 255, 255, 0.8)',
                         'liquid-inner': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
                     },
                     borderRadius: {
@@ -50,7 +49,7 @@
 
     <style>
         body { 
-            background: #F0F2F5; /* Fundo base */
+            background: #F0F2F5;
             background-image: 
                 radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
                 radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
@@ -62,7 +61,6 @@
         input[type=number] { -moz-appearance: textfield; }
         input::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; }
         
-        /* Scrollbar Liquid */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); }
         ::-webkit-scrollbar-thumb { 
@@ -73,7 +71,6 @@
         }
         ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.8); }
 
-        /* Classes Liquid Glass */
         .glass-panel {
             background: rgba(255, 255, 255, 0.65);
             backdrop-filter: blur(12px);
@@ -94,23 +91,15 @@
             transform: translateY(-1px);
             box-shadow: inset 0 1px 1px rgba(255,255,255,0.8), 0 6px 16px rgba(59, 130, 246, 0.4), 0 0 10px rgba(59, 130, 246, 0.2);
         }
-        .liquid-btn-primary:active {
-            transform: translateY(1px);
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
-        }
         
-        /* NOVO ESTILO: Botão Liquid 3D (Cápsula Azul) */
         .liquid-btn-3d {
             background: linear-gradient(180deg, #3B82F6 0%, #1D4ED8 100%);
-            border-radius: 9999px; /* Cápsula total */
+            border-radius: 9999px;
             border: none;
-            
-            /* Sombra interna para profundidade e sombra externa para elevação */
             box-shadow: 
-                inset 0 3px 5px rgba(255,255,255,0.4),  /* Luz topo borda */
-                inset 0 -3px 5px rgba(0,0,0,0.2),       /* Sombra base borda */
-                0 8px 20px rgba(37, 99, 235, 0.4);      /* Glow externo */
-            
+                inset 0 3px 5px rgba(255,255,255,0.4),
+                inset 0 -3px 5px rgba(0,0,0,0.2),
+                0 8px 20px rgba(37, 99, 235, 0.4);
             color: white;
             text-shadow: 0 1px 2px rgba(0,0,0,0.2);
             position: relative;
@@ -118,7 +107,6 @@
             transition: all 0.2s ease;
         }
 
-        /* O "Brilho" (Highlight) na parte superior */
         .liquid-btn-3d::before {
             content: "";
             position: absolute;
@@ -147,54 +135,6 @@
                 0 4px 10px rgba(37, 99, 235, 0.3);
         }
 
-        /* NOVO ESTILO: Botão Liquid Green 3D (Cápsula Verde) */
-        .liquid-btn-green-3d {
-            background: linear-gradient(180deg, #10B981 0%, #047857 100%); /* Emerald 500 -> Emerald 700 */
-            border-radius: 9999px;
-            border: none;
-            
-            /* Sombra interna para profundidade e sombra externa para elevação */
-            box-shadow: 
-                inset 0 3px 5px rgba(255,255,255,0.4),
-                inset 0 -3px 5px rgba(0,0,0,0.2),
-                0 8px 20px rgba(16, 185, 129, 0.4);
-            
-            color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-            position: relative;
-            overflow: hidden;
-            transition: all 0.2s ease;
-        }
-
-        .liquid-btn-green-3d::before {
-            content: "";
-            position: absolute;
-            top: 3px;
-            left: 5%;
-            width: 90%;
-            height: 40%;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.05) 100%);
-            border-radius: 9999px;
-            pointer-events: none;
-        }
-
-        .liquid-btn-green-3d:hover {
-            transform: translateY(-2px);
-            filter: brightness(1.1);
-            box-shadow: 
-                inset 0 3px 5px rgba(255,255,255,0.6), 
-                inset 0 -3px 5px rgba(0,0,0,0.2),
-                0 12px 25px rgba(16, 185, 129, 0.5);
-        }
-
-        .liquid-btn-green-3d:active {
-            transform: translateY(1px);
-            box-shadow: 
-                inset 0 2px 4px rgba(0,0,0,0.3),
-                0 4px 10px rgba(16, 185, 129, 0.3);
-        }
-
-
         .liquid-input {
             background: rgba(255, 255, 255, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.6);
@@ -208,25 +148,9 @@
             outline: none;
         }
 
-        /* Animações */
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .shimmer {
-            position: relative;
-            overflow: hidden;
-        }
-        .shimmer::after {
-            content: '';
-            position: absolute;
-            top: 0; right: 0; bottom: 0; left: 0;
-            background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
-            transform: skewX(-20deg) translateX(-150%);
-            animation: shimmer 3s infinite;
-        }
-        @keyframes shimmer { 100% { transform: skewX(-20deg) translateX(150%); } }
-
-        /* CSS Print */
         @media print {
             .no-print { display: none !important; }
             body { background: white !important; }
@@ -261,7 +185,6 @@
             measurementId: "G-Z33RRM8XPD"
         };
         
-        // Inicializar Firebase (Prevenção de dupla inicialização)
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
@@ -269,7 +192,7 @@
 
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // --- Componente de Ícones ---
+        // --- Ícones ---
         const Icon = ({ path, className }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} dangerouslySetInnerHTML={{ __html: path }} />
         );
@@ -309,7 +232,7 @@
             HardDrive: (props) => <Icon {...props} path='<line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="10.01" y2="16"></line>' />
         };
 
-        // --- Dados Estáticos (MANTIDO) ---
+        // --- Dados Estáticos ---
         const CATEGORIES_LIST = [
             "Despesa Fixa", "Despesa", "Salário", "Vale Alimentação",
             "Vale Transporte", "Vale (Adiantamento)", "Despesa Jack",
@@ -330,7 +253,6 @@
             "default": "image_6.png"
         };
 
-        // --- Configuração de Lembretes Fixos (MANTIDO) ---
         const FIXED_NOTIFICATIONS = [
             // Dia 05
             { day: 5, description: "Aluguel Loja Premium" },
@@ -372,7 +294,7 @@
             { day: 10, description: "Semae Xv (velha) - Débito aut." },
 
             // Dia 15
-            { day: 15, description: "IPTU Loja Dom Pedro", months: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11] }, // Março(2) a Dezembro(11)
+            { day: 15, description: "IPTU Loja Dom Pedro", months: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11] }, // Março a Dezembro
             { day: 15, description: "Pensão Marineusa" },
 
             // Dia 20
@@ -403,9 +325,7 @@
             { day: 27, description: "Vale Alimentação Funcionários" }
         ];
 
-        // Atualização dos Badges de Loja para Liquid Style
         const getStoreColorClass = (storeName) => {
-            // Usando gradients para efeito liquid
             const map = {
                 "Dom Pedro II": "bg-blue-50/50 text-blue-600 border-blue-200 shadow-sm",     
                 "Realme": "bg-yellow-50/50 text-yellow-600 border-yellow-200 shadow-sm",         
@@ -420,12 +340,11 @@
             return map[storeName] || "bg-gray-50 text-gray-600 border-gray-200";
         };
 
-        // --- NOVO: Estilo das Barras do Dashboard (Cores Específicas) ---
         const getStoreBarColor = (storeName) => {
             const map = {
                 "Dom Pedro II": "from-blue-500 to-blue-300",
                 "Realme": "from-yellow-400 to-yellow-200",
-                "Xv de Novembro": "from-slate-900 to-slate-600", // Preto/Cinza escuro
+                "Xv de Novembro": "from-slate-900 to-slate-600",
                 "Premium": "from-purple-500 to-purple-300",
                 "Kassouf": "from-orange-500 to-orange-300",
                 "Amparo": "from-pink-500 to-pink-300"
@@ -439,7 +358,6 @@
             categories: CATEGORIES_LIST.map(cat => ({ label: cat, odooRef: cat }))
         };
 
-        // --- Helpers (MANTIDO) ---
         const getTodayLocal = () => {
             const d = new Date();
             const year = d.getFullYear();
@@ -458,7 +376,7 @@
             return new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
         };
 
-        // --- Componente Personalizado de Input de Data (Visual Liquid) ---
+        // --- Componentes UI ---
         const DateInput = ({ value, onChange, required, className, placeholder = "dd/mm/aaaa" }) => {
             const [inputType, setInputType] = useState('text');
 
@@ -488,7 +406,6 @@
             );
         };
 
-        // --- Componente de Notificação (Toast) (Visual Liquid) ---
         const ToastContainer = ({ toasts, removeToast }) => (
             <div className="fixed top-4 right-4 z-[60] flex flex-col gap-3 pointer-events-none">
                 {toasts.map(toast => (
@@ -515,7 +432,6 @@
             </div>
         );
 
-        // --- Helper de Áudio Global (MANTIDO) ---
         let globalAudioCtx = null;
         const initAudioContext = () => {
             if (!globalAudioCtx) {
@@ -530,7 +446,7 @@
             return globalAudioCtx;
         };
 
-        // --- Componente de Calendário (Visualização + Checklist) - ESTILO LIQUID ---
+        // --- Componente de Calendário (Checklist) ---
         const ExpenseCalendar = ({ checkedState, onToggleCheck, showToast }) => {
             const [currentDate, setCurrentDate] = useState(new Date());
             const [zoomLevel, setZoomLevel] = useState(1); 
@@ -589,7 +505,6 @@
             };
 
             const getDayColorStyles = (day) => {
-                // Estilo Liquid: Cores translúcidas com bordas suaves baseado no dia
                 switch(day) {
                     case 5: return 'bg-blue-50/50 border-blue-200 hover:bg-blue-100/50';
                     case 10: return 'bg-emerald-50/50 border-emerald-200 hover:bg-emerald-100/50';
@@ -626,7 +541,6 @@
             return (
                 <div className="glass-panel rounded-liquid p-6 overflow-hidden fade-in flex flex-col relative transition-all duration-300">
                     
-                    {/* Header Liquid */}
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-6">
                         <div className="flex items-center gap-4">
                              <div className="flex bg-white/40 rounded-xl p-1 gap-1 border border-white/60 shadow-inner">
@@ -655,7 +569,6 @@
                         </div>
                     </div>
 
-                    {/* Grid do Calendário */}
                     <div className="p-1">
                         <div className="grid grid-cols-7 mb-4">
                             {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(d => (
@@ -666,12 +579,10 @@
                         </div>
                         
                         <div className="grid grid-cols-7 gap-3">
-                            {/* Dias Vazios */}
                             {Array.from({ length: firstDay }).map((_, i) => (
                                 <div key={`empty-${i}`}></div>
                             ))}
 
-                            {/* Dias do Mês */}
                             {Array.from({ length: daysInMonth }).map((_, i) => {
                                 const day = i + 1;
                                 const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
@@ -712,7 +623,6 @@
                         </div>
                     </div>
 
-                    {/* Box de Lembretes/Checklist */}
                     <div className="mt-8 pt-8 border-t border-slate-200/50">
                         <h3 className="font-bold text-slate-700 mb-6 flex items-center gap-3 text-lg">
                             <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg shadow-sm text-blue-600"><Icons.CheckSquare className="w-5 h-5"/></div>
@@ -760,7 +670,7 @@
                         </div>
                     </div>
 
-                    {/* Modais Liquid */}
+                    {/* Modais */}
                     {confirmPayModal.open && (
                         <>
                             <div className="fixed inset-0 z-[70] cursor-default bg-slate-900/10 backdrop-blur-sm" onClick={() => setConfirmPayModal({open:false, desc:null})}></div>
@@ -812,50 +722,32 @@
             );
         };
 
-        // --- NOVO COMPONENTE: Ícone 3D de Calendário ---
         const CalendarIcon3D = () => {
             const today = new Date().getDate();
             return (
                 <div className="relative w-10 h-10 group cursor-pointer transition-transform hover:-translate-y-0.5 active:translate-y-0">
-                    {/* Sombra base */}
                     <div className="absolute inset-0 bg-slate-900/20 rounded-xl translate-y-1 blur-[1px]"></div>
-                    
-                    {/* Corpo do Calendário */}
                     <div className="relative w-full h-full bg-[#f8f9fa] rounded-xl overflow-hidden border border-slate-200 shadow-inner flex flex-col items-center">
-                        {/* Header Vermelho */}
                         <div className="h-[35%] w-full bg-gradient-to-b from-[#ff4d4d] to-[#dc2626] relative">
-                            {/* Brilho no header */}
                             <div className="absolute top-0 left-0 w-full h-1/2 bg-white/30 rounded-t-md"></div>
                         </div>
-                        {/* Número do Dia */}
                         <div className="h-[65%] flex items-center justify-center">
                             <span className="text-lg font-bold text-slate-800 leading-none font-sans tracking-tight">{today}</span>
                         </div>
                     </div>
-
-                    {/* Argolas (Rings) */}
                     <div className="absolute -top-[2px] left-[20%] w-1.5 h-2.5 bg-gradient-to-b from-gray-400 via-white to-gray-500 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.3)] z-20"></div>
                     <div className="absolute -top-[2px] right-[20%] w-1.5 h-2.5 bg-gradient-to-b from-gray-400 via-white to-gray-500 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.3)] z-20"></div>
-                    
-                    {/* Furos das argolas (preto/escuro) */}
                     <div className="absolute top-[2px] left-[20%] w-1.5 h-1.5 bg-black/20 rounded-full z-10 translate-y-0.5"></div>
                     <div className="absolute top-[2px] right-[20%] w-1.5 h-1.5 bg-black/20 rounded-full z-10 translate-y-0.5"></div>
                 </div>
             );
         };
 
-        // --- NOVO COMPONENTE: Ícone 3D de Avançar (Estilo da Foto) ---
         const FastForwardIcon3D = () => (
             <div className="relative w-12 h-12 group select-none">
-                {/* Sombra Projetada */}
                 <div className="absolute inset-0 bg-blue-900/30 rounded-[14px] translate-y-2 translate-x-0 blur-[2px]"></div>
-                
-                {/* Corpo Lateral (Extrusão) */}
                 <div className="absolute inset-0 bg-[#2563eb] rounded-[14px] translate-y-1.5"></div>
-                
-                {/* Face Frontal */}
                 <div className="absolute inset-0 bg-gradient-to-b from-[#60a5fa] to-[#3b82f6] rounded-[14px] flex items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.5),inset_0_-2px_4px_rgba(0,0,0,0.1)]">
-                    {/* Ícone de Setas Duplas */}
                     <div className="flex -space-x-1.5 items-center justify-center transform translate-y-[1px]">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-sm filter">
                             <path d="M13 17l5-5-5-5" />
@@ -866,79 +758,50 @@
             </div>
         );
 
-        // --- NOVO COMPONENTE: Ícone de Disquete 3D (Estilo Realista Black) ---
         const FloppyDiskIcon3D = () => (
             <div className="relative w-10 h-10 group cursor-pointer transition-transform hover:-translate-y-0.5 active:translate-y-0">
-                {/* Shadow */}
                 <div className="absolute inset-0 bg-slate-900/30 rounded-lg translate-y-1 blur-[1px]"></div>
-                
-                {/* Disk Body (Black Plastic) */}
                 <div className="absolute inset-0 bg-[#1e1e1e] rounded-lg shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] overflow-hidden">
-                    
-                    {/* Label Indent (Top Area) */}
                     <div className="absolute top-0 left-[10%] right-[10%] h-[40%] border-b border-l border-r border-white/5 bg-[#181818]"></div>
-
-                    {/* Metal Shutter */}
                     <div className="absolute top-0 left-[15%] w-[45%] h-[38%] bg-gradient-to-b from-[#e5e7eb] via-[#d1d5db] to-[#9ca3af] shadow-md flex items-center justify-center rounded-b-[2px]">
-                        {/* Shutter Window */}
                         <div className="w-[35%] h-[65%] bg-[#1e1e1e] rounded-[1px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.8)] ml-[15%]"></div>
                     </div>
-
-                    {/* Metal Hub */}
                     <div className="absolute top-[60%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[32%] h-[32%] rounded-full bg-gradient-to-br from-[#f3f4f6] to-[#6b7280] shadow-[0_1px_2px_rgba(0,0,0,0.5)] flex items-center justify-center border border-gray-400">
-                        {/* Hub Hole */}
                         <div className="w-[30%] h-[30%] bg-[#181818] rounded-[1px] transform rotate-12 shadow-inner"></div>
-                        {/* Driving Hole */}
                         <div className="absolute bottom-[15%] right-[25%] w-[15%] h-[15%] bg-[#181818] rounded-full shadow-inner"></div>
                     </div>
-
-                    {/* Bottom Holes */}
                     <div className="absolute bottom-[8%] left-[8%] w-[10%] h-[10%] bg-[#121212] rounded-[2px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] border border-white/5"></div>
                     <div className="absolute bottom-[8%] right-[8%] w-[10%] h-[10%] bg-[#121212] rounded-[2px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] border border-white/5 flex items-center justify-center">
-                         {/* Write protect tab */}
                          <div className="w-[60%] h-[60%] bg-[#1e1e1e] mt-[40%]"></div>
                     </div>
-                    
-                    {/* Top Right Arrow/Notch simulation */}
                     <div className="absolute top-[2%] right-[2%] w-0 h-0 border-t-[6px] border-r-[6px] border-t-transparent border-r-white/5"></div>
                 </div>
             </div>
         );
 
-        // --- NOVO COMPONENTE: Ícone de Configurações 3D (Engrenagens Metálicas) ---
         const SettingsIcon3D = () => (
             <div className="relative w-12 h-12 -m-1 group cursor-pointer transition-transform hover:rotate-45 duration-700 ease-in-out">
-                {/* SVG principal */}
                 <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-lg filter">
                     <defs>
                         <linearGradient id="gearMetal" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#e5e7eb" />   {/* lighter */}
-                            <stop offset="50%" stopColor="#9ca3af" />   {/* mid */}
-                            <stop offset="100%" stopColor="#4b5563" />  {/* darker */}
+                            <stop offset="0%" stopColor="#e5e7eb" /> 
+                            <stop offset="50%" stopColor="#9ca3af" />
+                            <stop offset="100%" stopColor="#4b5563" />
                         </linearGradient>
                         <linearGradient id="gearInner" x1="0%" y1="100%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#6b7280" />
                             <stop offset="100%" stopColor="#f3f4f6" />
                         </linearGradient>
                     </defs>
-
-                    {/* Big Gear Group */}
                     <g transform="translate(38, 38)">
-                        {/* Teeth - 8 rects rotated */}
                         {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
                             <rect key={deg} x="-6" y="-38" width="12" height="76" rx="2" fill="url(#gearMetal)" transform={`rotate(${deg})`} />
                         ))}
-                        {/* Main Body */}
                         <circle cx="0" cy="0" r="28" fill="url(#gearMetal)" stroke="#9ca3af" strokeWidth="1"/>
-                        {/* Inner Rim (Depth) */}
                         <circle cx="0" cy="0" r="18" fill="transparent" stroke="url(#gearInner)" strokeWidth="4" />
-                        {/* Hole */}
-                        <circle cx="0" cy="0" r="12" fill="#F3F4F6" /> {/* Background color match */}
+                        <circle cx="0" cy="0" r="12" fill="#F3F4F6" />
                     </g>
-
-                    {/* Small Gear Group */}
                     <g transform="translate(75, 75)">
-                         {/* Teeth - 6 rects rotated */}
                         {[0, 60, 120, 180, 240, 300].map(deg => (
                             <rect key={deg} x="-5" y="-24" width="10" height="48" rx="2" fill="url(#gearMetal)" transform={`rotate(${deg})`} />
                         ))}
@@ -950,62 +813,38 @@
             </div>
         );
 
-        // --- NOVO COMPONENTE: Ícone de Casa 3D (Estilo Cartoon Realista) ---
         const HomeIcon3D = () => (
             <div className="relative w-12 h-12 group cursor-pointer transition-transform hover:-translate-y-0.5 active:translate-y-0 -m-1">
-                {/* Sombra base */}
                 <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-8 h-2 bg-slate-900/20 blur-sm rounded-full"></div>
-
-                {/* Chaminé */}
                 <div className="absolute top-[18%] right-[22%] w-[12%] h-[20%] bg-gradient-to-b from-red-400 to-red-600 rounded-sm z-0 shadow-sm border border-red-700/10">
                      <div className="absolute -top-[3px] -left-[2px] w-[140%] h-[5px] bg-red-500 rounded-full shadow-sm"></div>
                 </div>
-
-                {/* Corpo da Casa */}
                 <div className="absolute bottom-[10%] left-[20%] w-[60%] h-[50%] bg-gradient-to-b from-white to-slate-100 rounded-lg shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_2px_4px_rgba(0,0,0,0.05)] z-10 flex justify-center items-end border border-slate-200/50">
-                    {/* Porta */}
                     <div className="w-[40%] h-[75%] bg-gradient-to-b from-orange-400 to-orange-500 rounded-t-[6px] relative shadow-inner mb-0 border-t border-x border-white/20">
-                        {/* Maçaneta */}
                         <div className="absolute top-[55%] left-[15%] w-1.5 h-1.5 bg-white rounded-full shadow-sm"></div>
                     </div>
                 </div>
-
-                {/* Telhado */}
                 <div className="absolute top-[8%] left-[8%] w-[84%] h-[50%] z-20 pointer-events-none drop-shadow-lg">
                      <svg viewBox="0 0 100 60" className="w-full h-full overflow-visible">
-                        {/* Base Shadow/Darker part of tube */}
                         <path d="M10 50 L50 15 L90 50" fill="none" stroke="#b91c1c" strokeWidth="16" strokeLinecap="round" strokeLinejoin="round" />
-                        {/* Main Red Color */}
                         <path d="M10 48 L50 13 L90 48" fill="none" stroke="#ef4444" strokeWidth="16" strokeLinecap="round" strokeLinejoin="round" />
-                        {/* Highlight */}
                         <path d="M10 48 L50 13 L90 48" fill="none" stroke="#fca5a5" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" className="opacity-40 translate-y-[-2px]" />
                      </svg>
                 </div>
             </div>
         );
 
-        // --- NOVO COMPONENTE: Ícone de Carteira 3D (Estilo Cartoon Realista) ---
         const WalletIcon3D = () => (
             <div className="relative w-12 h-12 group cursor-pointer transition-transform hover:-translate-y-0.5 active:translate-y-0">
-                {/* Shadow */}
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-3 bg-blue-900/20 blur-md rounded-full"></div>
-
-                {/* Green Cards sticking out */}
                 <div className="absolute top-1 left-2 w-8 h-6 bg-emerald-500 rounded-md transform -rotate-6 border-t border-emerald-300"></div>
                 <div className="absolute top-2 left-3 w-8 h-6 bg-green-400 rounded-md transform -rotate-3 border-t border-green-200 shadow-sm"></div>
-
-                {/* Wallet Main Body */}
                 <div className="absolute top-4 left-1 w-10 h-8 bg-gradient-to-b from-amber-700 to-amber-900 rounded-xl shadow-lg border-t border-amber-600/50">
-                    {/* Flap/Fold line visual */}
                     <div className="absolute top-0 right-0 w-4 h-full bg-black/10 rounded-r-xl"></div>
                 </div>
-                
-                {/* Wallet Flap/Strap */}
                 <div className="absolute top-6 right-0 w-3 h-4 bg-amber-800 rounded-r-md shadow-sm flex items-center justify-center translate-x-1">
                      <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full shadow-sm"></div>
                 </div>
-
-                {/* Coin */}
                 <div className="absolute bottom-0 right-0 w-6 h-6 bg-gradient-to-br from-yellow-300 via-yellow-500 to-yellow-600 rounded-full shadow-lg border-2 border-yellow-200 flex items-center justify-center z-10">
                     <span className="text-yellow-800 font-bold text-[10px]">$</span>
                 </div>
@@ -1045,10 +884,8 @@
             const [amount, setAmount] = useState('');
             const [notes, setNotes] = useState('');
 
-            // --- NOVO STATE PARA MODAL DE BACKUP ---
             const [showBackupOptions, setShowBackupOptions] = useState(false);
 
-            // --- Effects (MANTIDO) ---
             useEffect(() => {
                 const saved = localStorage.getItem('odoo_fast_expenses');
                 if (saved) setExpenses(JSON.parse(saved));
@@ -1183,15 +1020,21 @@
                 setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
             };
 
-            // --- Handlers (MANTIDO) ---
             const handleCalendarCheckToggle = (key, status) => {
                 setCalendarChecks(prev => ({ ...prev, [key]: status }));
             };
 
-            // --- FUNÇÃO DE BACKUP LOCAL (Antigo handleBackup) ---
+            // --- SALVAR NO COMPUTADOR (Agora inclui Checks) ---
             const saveToComputer = async () => {
-                const dataStr = JSON.stringify(expenses, null, 2);
-                const fileName = `backup_despesas_${formatDateBR(getTodayLocal()).replace(/\//g, '-')}.json`;
+                // Objeto de Backup Completo
+                const backupData = {
+                    data: expenses,
+                    checks: calendarChecks,
+                    version: 2
+                };
+
+                const dataStr = JSON.stringify(backupData, null, 2);
+                const fileName = `backup_completo_${formatDateBR(getTodayLocal()).replace(/\//g, '-')}.json`;
 
                 if (window.showSaveFilePicker) {
                     try {
@@ -1202,7 +1045,7 @@
                         const writable = await handle.createWritable();
                         await writable.write(dataStr);
                         await writable.close();
-                        showToast("Backup salvo no local selecionado!", "success");
+                        showToast("Backup salvo no computador!", "success");
                         setShowBackupOptions(false);
                         return;
                     } catch (err) { if (err.name === 'AbortError') return; }
@@ -1216,11 +1059,11 @@
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                showToast("Backup salvo na pasta Downloads!", "success");
+                showToast("Backup baixado para Downloads!", "success");
                 setShowBackupOptions(false);
             };
 
-            // --- NOVA FUNÇÃO: SALVAR NA NUVEM (FIREBASE) ---
+            // --- SALVAR NA NUVEM (Agora inclui Checks) ---
             const saveToCloud = async () => {
                 if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
                     showToast("Configure seu nome nas configurações antes de salvar na nuvem!", "error");
@@ -1232,9 +1075,10 @@
                         user: settings.employeeName,
                         date: new Date(),
                         data: expenses,
+                        checks: calendarChecks, // SALVANDO OS CHECKS
                         formattedDate: formatDateBR(getTodayLocal())
                     });
-                    showToast("Backup salvo na nuvem com sucesso!", "success");
+                    showToast("Backup e Checklist salvos na nuvem!", "success");
                     setShowBackupOptions(false);
                 } catch (error) {
                     console.error("Erro ao salvar no Firebase:", error);
@@ -1242,7 +1086,7 @@
                 }
             };
             
-            // --- NOVA FUNÇÃO: RESTAURAR DA NUVEM (FIREBASE) ---
+            // --- RESTAURAR DA NUVEM (Agora restaura Checks) ---
             const handleCloudRestore = async () => {
                 if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
                     showToast("Configure seu nome para buscar seus backups!", "error");
@@ -1262,28 +1106,37 @@
                     }
 
                     const doc = snapshot.docs[0].data();
-                    if (doc.data && Array.isArray(doc.data)) {
-                        if (confirm(`Restaurar backup de ${new Date(doc.date.seconds * 1000).toLocaleString()}? Isso substituirá os dados atuais.`)) {
+                    
+                    if (confirm(`Restaurar backup de ${new Date(doc.date.seconds * 1000).toLocaleString()}? Isso substituirá os dados atuais.`)) {
+                        // Restaura Despesas
+                        if (doc.data && Array.isArray(doc.data)) {
                             setExpenses(doc.data);
-                            showToast("Dados restaurados da nuvem!", "success");
-                            setIsSettingsOpen(false);
                         }
-                    } else {
-                        showToast("Formato de dados inválido na nuvem.", "error");
+                        
+                        // Restaura Checklist (se existir no backup)
+                        if (doc.checks) {
+                            setCalendarChecks(doc.checks);
+                            showToast("Despesas e Checklist restaurados!", "success");
+                        } else {
+                            showToast("Apenas despesas restauradas (Checklist antigo não encontrado).", "info");
+                        }
+                        
+                        setIsSettingsOpen(false);
                     }
+
                 } catch (error) {
                     console.error("Erro ao restaurar:", error);
                     showToast("Erro ao buscar backup na nuvem.", "error");
                 }
             };
 
-            // --- Handler Modificado para abrir Modal de Opções ---
             const handleBackupClick = () => {
                 setShowBackupOptions(true);
             };
 
             const triggerRestore = () => { fileInputRef.current.click(); };
 
+            // --- RESTAURAR ARQUIVO LOCAL (Compatibilidade Versão 1 e 2) ---
             const handleRestoreFile = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -1291,13 +1144,29 @@
                 reader.onload = (event) => {
                     try {
                         const importedData = JSON.parse(event.target.result);
-                        if (Array.isArray(importedData)) {
-                            if (confirm("Isso irá substituir todas as despesas atuais pelo backup. Tem certeza?")) {
+                        
+                        if (confirm("Isso irá substituir todas as despesas atuais pelo backup. Tem certeza?")) {
+                            
+                            // Caso 1: Backup Antigo (Array direto)
+                            if (Array.isArray(importedData)) {
                                 setExpenses(importedData);
-                                showToast("Dados restaurados com sucesso!");
-                                setIsSettingsOpen(false);
+                                showToast("Despesas restauradas (Formato Antigo).");
+                            } 
+                            // Caso 2: Backup Novo (Objeto com data e checks)
+                            else if (importedData.data && Array.isArray(importedData.data)) {
+                                setExpenses(importedData.data);
+                                if (importedData.checks) {
+                                    setCalendarChecks(importedData.checks);
+                                    showToast("Despesas e Checklist restaurados!");
+                                } else {
+                                    showToast("Despesas restauradas!");
+                                }
+                            } else { 
+                                showToast("Arquivo de backup inválido", "error"); 
                             }
-                        } else { showToast("Arquivo de backup inválido", "error"); }
+                            
+                            setIsSettingsOpen(false);
+                        }
                     } catch (err) { showToast("Erro ao ler arquivo", "error"); }
                 };
                 reader.readAsText(file);
@@ -1436,7 +1305,6 @@
                 showToast("Arquivo CSV gerado!");
             };
 
-            // --- Calculations & Filtering (MANTIDO) ---
             const filteredExpenses = useMemo(() => {
                 let filtered = expenses;
                 if (filterDate) {
@@ -1482,7 +1350,6 @@
                 <div className="pb-20 print:pb-0 min-h-screen">
                     <ToastContainer toasts={toasts} removeToast={id => setToasts(p => p.filter(t => t.id !== id))} />
 
-                    {/* Navbar Flutuante Liquid */}
                     <div className="sticky top-0 z-50 no-print px-4 py-4">
                         <div className="max-w-5xl mx-auto">
                             <div className="glass-panel p-3 px-5 flex justify-between items-center rounded-2xl">
@@ -1509,7 +1376,6 @@
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    {/* Botão de Backup modificado para abrir modal */}
                                     <button onClick={handleBackupClick} className="focus:outline-none transition-transform active:scale-95 p-1" title="Salvar Backup">
                                         <FloppyDiskIcon3D />
                                     </button>
@@ -1523,7 +1389,6 @@
 
                     <div className="max-w-5xl mx-auto px-6 space-y-8 mt-4">
                         
-                        {/* VIEW CALENDÁRIO */}
                         {currentView === 'calendar' ? (
                             <ExpenseCalendar 
                                 checkedState={calendarChecks} 
@@ -1532,7 +1397,6 @@
                             />
                         ) : (
                             <>
-                                {/* Dashboard Cards - Estilo Liquid Glass - ORDENADO POR MAIOR GASTO */}
                                 {expenses.length > 0 && (
                                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 no-print fade-in">
                                         {Object.entries(totalsByStore)
@@ -1544,14 +1408,12 @@
                                                     <span className="text-[10px] uppercase font-bold text-slate-400 truncate block tracking-wide">{storeName}</span>
                                                 </div>
                                                 <span className="text-xl font-bold text-slate-700 block mb-3">{settings.currency} {formatCurrency(val)}</span>
-                                                {/* BARRA COLORIDA PERSONALIZADA */}
                                                 <div className={`h-1.5 w-full rounded-full bg-gradient-to-r opacity-80 ${getStoreBarColor(storeName)}`}></div>
                                             </div>
                                         ))}
                                     </div>
                                 )}
 
-                                {/* Formulário - Estilo Liquid */}
                                 <div className="glass-panel rounded-3xl overflow-hidden no-print">
                                     <div className="p-8">
                                         <div className="flex justify-between items-center mb-8">
@@ -1574,7 +1436,6 @@
 
                                         <form onSubmit={handleSubmit} className="space-y-6">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                {/* Data */}
                                                 <div className="space-y-2">
                                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Data</label>
                                                     <DateInput 
@@ -1585,7 +1446,6 @@
                                                     />
                                                 </div>
 
-                                                {/* Categoria */}
                                                 <div className="space-y-2">
                                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Categoria</label>
                                                     <div className="relative group">
@@ -1600,14 +1460,12 @@
                                                     </div>
                                                 </div>
 
-                                                {/* Descrição */}
                                                 <div className="space-y-2 md:col-span-2">
                                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Descrição</label>
                                                     <input type="text" required placeholder="Ex: Café com cliente" value={description} onChange={e => setDescription(e.target.value)}
                                                         className="liquid-input w-full px-5 py-3.5 rounded-xl text-slate-700 font-semibold placeholder-slate-400" />
                                                 </div>
 
-                                                {/* Loja */}
                                                 <div className="space-y-2">
                                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Loja / Grupo</label>
                                                     <div className="relative group">
@@ -1625,7 +1483,6 @@
                                                     {!editingId && store === "Todas" && <p className="text-[10px] text-green-600 font-bold px-3 pt-1 animate-pulse">* Divide por 5</p>}
                                                 </div>
 
-                                                {/* Valor */}
                                                 <div className="space-y-2">
                                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Valor ({settings.currency})</label>
                                                     <div className="relative group">
@@ -1637,7 +1494,6 @@
                                                     </div>
                                                 </div>
 
-                                                {/* Obs */}
                                                 <div className="space-y-2 md:col-span-2">
                                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Observações (Opcional)</label>
                                                     <input type="text" value={notes} onChange={e => setNotes(e.target.value)}
@@ -1653,7 +1509,6 @@
                                     </div>
                                 </div>
 
-                                {/* Barra de Ações e Totais */}
                                 {expenses.length > 0 && (
                                     <div className="glass-panel p-6 rounded-3xl flex flex-col gap-8 print:border-none print:shadow-none print:p-0 print:mb-6">
                                         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -1680,7 +1535,6 @@
                                             </div>
                                         </div>
                                         
-                                        {/* Filtros */}
                                         <div className="flex flex-col md:flex-row gap-6 no-print items-end md:items-center bg-white/30 p-4 rounded-2xl border border-white/40">
                                             <div className="relative flex-1 w-full group">
                                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -1733,7 +1587,6 @@
                                     </div>
                                 )}
 
-                                {/* LISTA DE DADOS - Visual Liquid */}
                                 {expenses.length > 0 && (
                                     <div className="space-y-8 print:space-y-6">
                                         {groupedExpenses.map(group => (
@@ -1836,9 +1689,6 @@
                         )}
                     </div>
 
-                    {/* Modais Globais (Reminder, Delete, Password, Settings) - VISUAL LIQUID */}
-
-                    {/* --- NOVO MODAL: OPÇÕES DE BACKUP --- */}
                     {showBackupOptions && (
                          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/20 backdrop-blur-md p-4 animate-in fade-in zoom-in no-print">
                             <div className="glass-panel w-full max-w-sm overflow-hidden relative rounded-3xl shadow-2xl p-8 text-center">
@@ -1873,7 +1723,6 @@
                         </div>
                     )}
                     
-                    {/* Reminder Modal */}
                     {showReminder && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/20 backdrop-blur-md p-4 animate-in fade-in zoom-in no-print">
                             <div className="glass-panel w-full max-w-sm overflow-hidden relative rounded-3xl shadow-2xl">
@@ -1906,7 +1755,6 @@
                         </div>
                     )}
 
-                    {/* Delete Modal */}
                     {deleteModalState.open && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-md fade-in no-print">
                             <div className="glass-panel w-full max-w-sm overflow-hidden transform transition-all scale-100 p-8 text-center rounded-3xl">
@@ -1927,7 +1775,6 @@
                         </div>
                     )}
 
-                    {/* Password/Clear All Modal */}
                     {isPasswordModalOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-md fade-in no-print">
                             <div className="glass-panel w-full max-w-sm overflow-hidden p-8 text-center rounded-3xl">
@@ -1948,7 +1795,6 @@
                         </div>
                     )}
                     
-                    {/* Settings Modal */}
                     {isSettingsOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-md no-print">
                             <div className="glass-panel w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh] rounded-3xl border border-white/80 shadow-2xl">
@@ -1981,7 +1827,6 @@
                                             </button>
                                             <input type="file" ref={fileInputRef} onChange={handleRestoreFile} accept=".json" className="hidden" />
 
-                                            {/* NOVO BOTÃO: RESTAURAR DA NUVEM */}
                                             <button onClick={handleCloudRestore} className="flex items-center justify-center gap-2 w-full py-3.5 bg-emerald-50 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 border border-emerald-100 rounded-xl transition-all shadow-sm">
                                                 <Icons.Cloud className="w-5 h-5" /> Baixar da Nuvem
                                             </button>
