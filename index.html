@@ -379,6 +379,14 @@
             return `${day}/${month}/${year}`;
         };
 
+        const formatMonthBR = (yearMonth) => {
+            if (!yearMonth) return "";
+            const [year, month] = yearMonth.split('-');
+            const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+            const monthName = date.toLocaleDateString('pt-BR', { month: 'long' });
+            return `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+        };
+
         const formatCurrency = (value) => {
             return new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
         };
@@ -491,6 +499,21 @@
             const [confirmPayModal, setConfirmPayModal] = useState({ open: false, desc: null });
             const [fixModal, setFixModal] = useState({ open: false, desc: null });
             const [fixPassword, setFixPassword] = useState('');
+            
+            // Lógica Inteligente para o filtro padrão baseado no dia de hoje
+            const getSmartDefaultDay = () => {
+                const today = new Date().getDate();
+                if (today >= 1 && today <= 4) return 27;  // Inicio do mês vê final do anterior
+                if (today >= 5 && today <= 9) return 5;
+                if (today >= 10 && today <= 14) return 10;
+                if (today >= 15 && today <= 19) return 15;
+                if (today >= 20 && today <= 24) return 20;
+                if (today >= 25 && today <= 26) return 25;
+                return 27; // Dia 27 em diante
+            };
+
+            // NOVO: Estado inicializa com a lógica inteligente
+            const [selectedDayFilter, setSelectedDayFilter] = useState(getSmartDefaultDay());
 
             const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
             const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
@@ -572,6 +595,31 @@
                 }
             };
             const zoomStyles = getZoomStyles();
+
+            // Helper para dias únicos ordenados
+            const uniqueFixedDays = useMemo(() => {
+                return [...new Set(FIXED_NOTIFICATIONS.map(n => n.day))].sort((a,b) => a - b);
+            }, []);
+
+            // Função para cores dos botões de filtro
+            const getFilterButtonClass = (day, isSelected) => {
+                const baseClass = "px-4 py-2 text-xs font-bold rounded-xl transition-all border shadow-sm flex items-center gap-1";
+                
+                if (!isSelected) {
+                    return `${baseClass} bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:border-slate-300`;
+                }
+
+                // Cores quando selecionado (baseado no getDueDateBadgeColor)
+                switch(day) {
+                    case 5: return `${baseClass} bg-blue-500 text-white border-blue-600 ring-2 ring-blue-200 shadow-blue-200`;
+                    case 10: return `${baseClass} bg-emerald-500 text-white border-emerald-600 ring-2 ring-emerald-200 shadow-emerald-200`;
+                    case 15: return `${baseClass} bg-orange-500 text-white border-orange-600 ring-2 ring-orange-200 shadow-orange-200`;
+                    case 20: return `${baseClass} bg-yellow-500 text-white border-yellow-600 ring-2 ring-yellow-200 shadow-yellow-200`;
+                    case 25: return `${baseClass} bg-red-500 text-white border-red-600 ring-2 ring-red-200 shadow-red-200`;
+                    case 27: return `${baseClass} bg-purple-500 text-white border-purple-600 ring-2 ring-purple-200 shadow-purple-200`;
+                    default: return `${baseClass} bg-slate-700 text-white border-slate-800`; // Caso 'Todos' esteja selecionado (se lógica mudasse)
+                }
+            };
 
             return (
                 <div className="glass-panel rounded-liquid p-6 overflow-hidden fade-in flex flex-col relative transition-all duration-300">
@@ -699,13 +747,39 @@
                     </div>
 
                     <div className="mt-8 pt-8 border-t border-slate-200/50">
-                        <h3 className="font-bold text-slate-700 mb-6 flex items-center gap-3 text-lg">
-                            <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg shadow-sm text-blue-600"><Icons.CheckSquare className="w-5 h-5"/></div>
-                            Pagamentos Fixos de {monthNames[month]}
-                        </h3>
+                        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 mb-6">
+                            <h3 className="font-bold text-slate-700 flex items-center gap-3 text-lg whitespace-nowrap">
+                                <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg shadow-sm text-blue-600"><Icons.CheckSquare className="w-5 h-5"/></div>
+                                Pagamentos Fixos de {monthNames[month]}
+                            </h3>
+                            
+                            {/* Botões de Filtro por Dia */}
+                            <div className="flex flex-wrap gap-2 w-full xl:w-auto justify-start xl:justify-end">
+                                {uniqueFixedDays.map(day => (
+                                    <button 
+                                        key={day}
+                                        onClick={() => setSelectedDayFilter(day === selectedDayFilter ? null : day)}
+                                        className={getFilterButtonClass(day, selectedDayFilter === day)}
+                                    >
+                                        Dia {day}
+                                    </button>
+                                ))}
+                                
+                                <div className="w-px h-8 bg-slate-300 mx-1 hidden sm:block"></div>
+
+                                <button 
+                                    onClick={() => setSelectedDayFilter(null)}
+                                    className={`px-4 py-2 text-xs font-bold rounded-xl transition-all border shadow-sm ${selectedDayFilter === null ? 'bg-slate-700 text-white border-slate-800 ring-2 ring-slate-200' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}
+                                >
+                                    Todos
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {FIXED_NOTIFICATIONS
                                 .filter(item => !item.months || item.months.includes(month))
+                                .filter(item => selectedDayFilter === null || item.day === selectedDayFilter) // Filtro aplicado aqui
                                 .map((item, idx) => {
                                  const key = `${year}-${month}-${item.description}`;
                                  const isChecked = !!checkedState[key];
@@ -885,7 +959,12 @@
             const [toasts, setToasts] = useState([]);
             const [searchTerm, setSearchTerm] = useState('');
             const [groupBy, setGroupBy] = useState('date');
-            const [filterDate, setFilterDate] = useState('');
+            
+            // Lógica de Data e Navegação
+            const [filterMode, setFilterMode] = useState('day'); // 'day' | 'month'
+            const [selectedDate, setSelectedDate] = useState('');
+            const [selectedMonth, setSelectedMonth] = useState('');
+
             const [currentView, setCurrentView] = useState('dashboard');
             const [syncStatus, setSyncStatus] = useState('offline');
             const [user, setUser] = useState(null);
@@ -955,7 +1034,6 @@
                     checksRef = base.collection('team_data').doc(CHECKLIST_DOC_ID);
                 } else {
                     // Prod Path (app_data/global/expenses)
-                    // Configuração ajustada conforme solicitado
                     expensesRef = db.collection('miplace-despesas').doc('data').collection('team_expenses_v2'); 
                     
                     // Ajuste Específico para Checks:
@@ -1400,24 +1478,88 @@
                 showToast("Arquivo CSV gerado!");
             };
 
+            // --- Lógica de Navegação por Data ---
+            const availableDates = useMemo(() => {
+                const dates = [...new Set(expenses.map(e => e.date))];
+                return dates.sort((a, b) => a.localeCompare(b)); // Ascending (Antigo -> Novo)
+            }, [expenses]);
+
+             // --- Lógica de Navegação por Mês ---
+             const availableMonths = useMemo(() => {
+                const months = [...new Set(expenses.map(e => e.date.substring(0, 7)))]; // Extrai "YYYY-MM"
+                return months.sort((a, b) => a.localeCompare(b));
+            }, [expenses]);
+
+            // Set Default Selections (Last Date / Last Month)
+            useEffect(() => {
+                if (availableDates.length > 0) {
+                    if (!selectedDate || !availableDates.includes(selectedDate)) {
+                        setSelectedDate(availableDates[availableDates.length - 1]);
+                    }
+                }
+            }, [availableDates, selectedDate]);
+
+            useEffect(() => {
+                if (availableMonths.length > 0) {
+                    if (!selectedMonth || !availableMonths.includes(selectedMonth)) {
+                        setSelectedMonth(availableMonths[availableMonths.length - 1]);
+                    }
+                }
+            }, [availableMonths, selectedMonth]);
+
+            // Date Handlers
+            const handlePrevDate = () => {
+                const idx = availableDates.indexOf(selectedDate);
+                if (idx > 0) setSelectedDate(availableDates[idx - 1]);
+            };
+
+            const handleNextDate = () => {
+                const idx = availableDates.indexOf(selectedDate);
+                if (idx < availableDates.length - 1) setSelectedDate(availableDates[idx + 1]);
+            };
+
+            // Month Handlers
+            const handlePrevMonthFilter = () => {
+                const idx = availableMonths.indexOf(selectedMonth);
+                if (idx > 0) setSelectedMonth(availableMonths[idx - 1]);
+            };
+
+            const handleNextMonthFilter = () => {
+                const idx = availableMonths.indexOf(selectedMonth);
+                if (idx < availableMonths.length - 1) setSelectedMonth(availableMonths[idx + 1]);
+            };
+
             const filteredExpenses = useMemo(() => {
                 let filtered = expenses;
-                if (filterDate) {
-                    filtered = filtered.filter(ex => ex.date === filterDate);
-                }
+                
+                // 1. Busca Global (Prioridade): Se tem busca, ignora a paginação por data
                 if (searchTerm) {
                     const lowerSearch = searchTerm.toLowerCase();
-                    filtered = filtered.filter(ex => 
+                    return filtered.filter(ex => 
                         ex.description.toLowerCase().includes(lowerSearch) ||
                         ex.category.toLowerCase().includes(lowerSearch) ||
                         ex.store.toLowerCase().includes(lowerSearch) ||
                         (ex.notes && ex.notes.toLowerCase().includes(lowerSearch))
                     );
                 }
+
+                // 2. Filtro (Modo Mês)
+                if (filterMode === 'month' && selectedMonth) {
+                    filtered = filtered.filter(ex => ex.date.startsWith(selectedMonth));
+                }
+                
+                // 3. Filtro (Modo Dia - Padrão)
+                else if (filterMode === 'day' && selectedDate) {
+                    filtered = filtered.filter(ex => ex.date === selectedDate);
+                }
+                
                 return filtered;
-            }, [expenses, searchTerm, filterDate]);
+            }, [expenses, searchTerm, selectedDate, selectedMonth, filterMode]);
 
             const groupedExpenses = useMemo(() => {
+                // Se tiver busca, pode agrupar como antes.
+                // Se for por data, basicamente só teremos um grupo de data (o dia selecionado) 
+                // ou vários grupos de loja dentro daquele dia.
                 const groups = {};
                 filteredExpenses.forEach(ex => {
                     const key = groupBy === 'date' ? ex.date : ex.store;
@@ -1425,7 +1567,7 @@
                     groups[key].push(ex);
                 });
                 const sortedKeys = Object.keys(groups).sort((a, b) => {
-                    if (groupBy === 'date') return b.localeCompare(a); 
+                    if (groupBy === 'date') return b.localeCompare(a); // Descendente
                     return a.localeCompare(b); 
                 });
                 return sortedKeys.map(key => ({
@@ -1435,11 +1577,19 @@
 
             const totalsByStore = useMemo(() => {
                 const acc = {};
+                // Calcula totais baseados no FILTRO ATUAL (Dia ou Busca)
                 filteredExpenses.forEach(ex => { acc[ex.store] = (acc[ex.store] || 0) + ex.amount; });
                 return acc;
             }, [filteredExpenses]);
             
             const totalGeneral = filteredExpenses.reduce((sum, ex) => sum + ex.amount, 0);
+
+            // Título Dinâmico do Total
+            const getTotalTitle = () => {
+                if (searchTerm) return "(Busca)";
+                if (filterMode === 'month') return `(Mês: ${formatMonthBR(selectedMonth)})`;
+                return "(Do Dia)";
+            }
 
             return (
                 <div className="pb-20 print:pb-0 min-h-screen">
@@ -1632,7 +1782,7 @@
                                     <div className="glass-panel p-6 rounded-3xl flex flex-col gap-8 print:border-none print:shadow-none print:p-0 print:mb-6">
                                             <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                                                 <div className="text-center md:text-left">
-                                                    <p className="text-xs text-slate-400 uppercase font-bold mb-2 no-print tracking-widest">Total Geral</p>
+                                                    <p className="text-xs text-slate-400 uppercase font-bold mb-2 no-print tracking-widest">Total Geral {getTotalTitle()}</p>
                                                     <p className="text-4xl font-extrabold text-slate-800 tracking-tight drop-shadow-sm">
                                                         <span className="text-xl text-slate-400 font-bold mr-1 align-top relative top-1">{settings.currency}</span>
                                                         {formatCurrency(totalGeneral)}
@@ -1666,21 +1816,77 @@
                                                 </div>
                                                 
                                                 <div className="flex flex-wrap gap-4 w-full md:w-auto items-center">
-                                                    <div className="flex items-center gap-2 bg-white/60 p-1.5 rounded-xl border border-white shadow-sm relative">
-                                                        <div className="w-32">
-                                                            <DateInput 
-                                                                value={filterDate} 
-                                                                onChange={(e) => setFilterDate(e.target.value)}
-                                                                className="w-full bg-transparent text-xs font-bold text-slate-600 outline-none px-2 py-1 cursor-pointer rounded-lg hover:bg-white/50 transition-colors"
-                                                                placeholder="Filtrar Data"
-                                                            />
+                                                    
+                                                    {/* CONTROLE DE NAVEGAÇÃO POR DATA E MÊS */}
+                                                    {!searchTerm ? (
+                                                        <>
+                                                            {/* SELETOR DE MODO */}
+                                                            <div className="flex bg-white/60 p-1 rounded-xl border border-white shadow-sm mr-2">
+                                                                <button 
+                                                                    onClick={() => setFilterMode('day')}
+                                                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${filterMode === 'day' ? 'bg-gradient-to-r from-blue-500 to-blue-400 text-white shadow-md' : 'text-slate-500 hover:bg-white/50'}`}
+                                                                >
+                                                                    Dia
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => setFilterMode('month')}
+                                                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${filterMode === 'month' ? 'bg-gradient-to-r from-blue-500 to-blue-400 text-white shadow-md' : 'text-slate-500 hover:bg-white/50'}`}
+                                                                >
+                                                                    Mês
+                                                                </button>
+                                                            </div>
+
+                                                            {filterMode === 'day' ? (
+                                                                <div className="flex items-center gap-2 bg-white/60 p-1 rounded-xl border border-white shadow-sm">
+                                                                    <button 
+                                                                        onClick={handlePrevDate} 
+                                                                        disabled={availableDates.indexOf(selectedDate) <= 0}
+                                                                        className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white/50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                                                    >
+                                                                        <Icons.ChevronLeft className="w-5 h-5"/>
+                                                                    </button>
+                                                                    
+                                                                    <span className="font-bold text-slate-700 px-2 min-w-[100px] text-center text-sm">
+                                                                        {selectedDate ? formatDateBR(selectedDate) : '...'}
+                                                                    </span>
+                                                                    
+                                                                    <button 
+                                                                        onClick={handleNextDate} 
+                                                                        disabled={availableDates.indexOf(selectedDate) >= availableDates.length - 1}
+                                                                        className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white/50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                                                    >
+                                                                        <Icons.ChevronRight className="w-5 h-5"/>
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-2 bg-white/60 p-1 rounded-xl border border-white shadow-sm">
+                                                                    <button 
+                                                                        onClick={handlePrevMonthFilter} 
+                                                                        disabled={availableMonths.indexOf(selectedMonth) <= 0}
+                                                                        className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white/50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                                                    >
+                                                                        <Icons.ChevronLeft className="w-5 h-5"/>
+                                                                    </button>
+                                                                    
+                                                                    <span className="font-bold text-slate-700 px-2 min-w-[120px] text-center text-sm capitalize">
+                                                                        {selectedMonth ? formatMonthBR(selectedMonth) : '...'}
+                                                                    </span>
+                                                                    
+                                                                    <button 
+                                                                        onClick={handleNextMonthFilter} 
+                                                                        disabled={availableMonths.indexOf(selectedMonth) >= availableMonths.length - 1}
+                                                                        className="p-2 text-slate-500 hover:text-blue-600 hover:bg-white/50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                                                    >
+                                                                        <Icons.ChevronRight className="w-5 h-5"/>
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <div className="bg-yellow-100 text-yellow-700 px-3 py-2 rounded-lg text-xs font-bold border border-yellow-200">
+                                                            Modo Busca Ativo (Global)
                                                         </div>
-                                                        {filterDate && (
-                                                            <button onClick={() => setFilterDate('')} className="absolute -right-2 -top-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 z-10 transition-transform hover:scale-110">
-                                                                <Icons.X className="w-3 h-3"/>
-                                                            </button>
-                                                        )}
-                                                    </div>
+                                                    )}
 
                                                     <div className="h-6 w-px bg-slate-300 hidden md:block"></div>
 
