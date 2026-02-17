@@ -955,9 +955,15 @@
                     checksRef = base.collection('team_data').doc(CHECKLIST_DOC_ID);
                 } else {
                     // Prod Path (app_data/global/expenses)
-                    const base = db.collection('miplace-despesas').doc('data');
-                    expensesRef = base.collection('team_expenses_v2'); 
-                    checksRef = base.collection('team_data').doc(CHECKLIST_DOC_ID); 
+                    // Configuração ajustada conforme solicitado
+                    expensesRef = db.collection('miplace-despesas').doc('data').collection('team_expenses_v2'); 
+                    
+                    // Ajuste Específico para Checks:
+                    // miplace-despesas -> data-team_data -> global_checklist_v1 -> checks
+                    checksRef = db.collection('miplace-despesas')
+                                  .doc('data-team_data')
+                                  .collection('global_checklist_v1')
+                                  .doc('checks');
                 }
                 return { expensesRef, checksRef };
             };
