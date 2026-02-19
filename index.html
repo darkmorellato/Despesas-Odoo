@@ -159,20 +159,42 @@
         }
         .alert-slide-up { animation: slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
+        /* Estilos Aprimorados para Impressão */
         @media print {
             .no-print { display: none !important; }
-            body { background: white !important; }
+            
+            body { 
+                background: white !important; 
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important; 
+            }
+            
+            /* Removemos todos os filtros de desfoque para evitar que elementos desapareçam */
+            * {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+            }
+
             .glass-panel, .liquid-btn-primary, .liquid-input, .liquid-btn-3d { 
                 background: white !important; 
                 box-shadow: none !important; 
                 border: 1px solid #ddd !important;
-                backdrop-filter: none !important;
                 color: black !important;
             }
+
+            /* Correção específica para forçar o nome da loja a aparecer na impressão */
+            .store-badge-print {
+                background: transparent !important;
+                color: black !important;
+                border: 1px solid #999 !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
+            }
+
             .truncate, .max-w-xs { white-space: normal !important; overflow: visible !important; width: auto !important; }
             table { width: 100% !important; table-layout: auto !important; }
             tr { break-inside: avoid; page-break-inside: avoid; } 
-            td, th { padding: 4px 2px !important; vertical-align: top !important; }
+            td, th { padding: 4px 2px !important; vertical-align: middle !important; color: black !important; }
             .print-scroll-fix { max-height: none !important; overflow: visible !important; }
             thead { position: static !important; }
         }
@@ -2261,7 +2283,7 @@
                                                                         <tr key={ex.id} className="hover:bg-blue-50/40 transition-colors group">
                                                                             {groupBy === 'date' && (
                                                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                                                    <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm border border-white/50 backdrop-blur-sm ${getStoreColorClass(ex.store)}`}>
+                                                                                    <span className={`store-badge-print inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm border border-white/50 backdrop-blur-sm ${getStoreColorClass(ex.store)}`}>
                                                                                         {ex.store}
                                                                                     </span>
                                                                                 </td>
