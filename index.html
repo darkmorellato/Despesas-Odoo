@@ -159,42 +159,20 @@
         }
         .alert-slide-up { animation: slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        /* Estilos Aprimorados para Impressão */
         @media print {
             .no-print { display: none !important; }
-            
-            body { 
-                background: white !important; 
-                -webkit-print-color-adjust: exact !important; 
-                print-color-adjust: exact !important; 
-            }
-            
-            /* Removemos todos os filtros de desfoque para evitar que elementos desapareçam */
-            * {
-                backdrop-filter: none !important;
-                -webkit-backdrop-filter: none !important;
-            }
-
+            body { background: white !important; }
             .glass-panel, .liquid-btn-primary, .liquid-input, .liquid-btn-3d { 
                 background: white !important; 
                 box-shadow: none !important; 
                 border: 1px solid #ddd !important;
+                backdrop-filter: none !important;
                 color: black !important;
             }
-
-            /* Correção específica para forçar o nome da loja a aparecer na impressão */
-            .store-badge-print {
-                background: transparent !important;
-                color: black !important;
-                border: 1px solid #999 !important;
-                box-shadow: none !important;
-                text-shadow: none !important;
-            }
-
             .truncate, .max-w-xs { white-space: normal !important; overflow: visible !important; width: auto !important; }
             table { width: 100% !important; table-layout: auto !important; }
             tr { break-inside: avoid; page-break-inside: avoid; } 
-            td, th { padding: 4px 2px !important; vertical-align: middle !important; color: black !important; }
+            td, th { padding: 4px 2px !important; vertical-align: top !important; }
             .print-scroll-fix { max-height: none !important; overflow: visible !important; }
             thead { position: static !important; }
         }
@@ -270,9 +248,7 @@
             HardDrive: (props) => <Icon {...props} path='<line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="10.01" y2="16"></line>' />,
             Wifi: (props) => <Icon {...props} path='<path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line>' />,
             WifiOff: (props) => <Icon {...props} path='<line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line>' />,
-            Globe: (props) => <Icon {...props} path='<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>' />,
-            ArrowUp: (props) => <Icon {...props} path='<line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline>' />,
-            ArrowDown: (props) => <Icon {...props} path='<line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline>' />
+            Globe: (props) => <Icon {...props} path='<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>' />
         };
 
         const CATEGORIES_LIST = [
@@ -1280,9 +1256,6 @@
             const [searchTerm, setSearchTerm] = useState('');
             const [groupBy, setGroupBy] = useState('date');
             
-            // NOVO ESTADO PARA ORDENAÇÃO
-            const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-
             // Lógica de Data e Navegação
             const [filterMode, setFilterMode] = useState('day'); // 'day' | 'month'
             const [selectedDate, setSelectedDate] = useState('');
@@ -1315,6 +1288,7 @@
             
             // Controle de Loop de Escrita (Ref)
             const isRemoteUpdate = useRef(false);
+            const checksLoaded = useRef(false); // ← NOVO: impede sobrescrever antes de carregar
 
             // 1. Inicialização: Auth & Refs
             useEffect(() => {
@@ -1395,28 +1369,39 @@
                 return () => unsubscribe();
             }, [user]);
 
-            // 4. Efeito READ/WRITE (Checklist - Documento Único - Sync Simples)
+            // 4. Efeito READ do Checklist (separado do write)
             useEffect(() => {
                 if (!user) return;
-                const { checksRef } = getRefs();
+            checksLoaded.current = false; // reseta ao reconectar
+            const { checksRef } = getRefs();
 
-                const unsubscribe = checksRef.onSnapshot(doc => {
-                    if (doc.exists) {
-                        setCalendarChecks(doc.data().checks || {});
-                    }
-                });
-                return () => unsubscribe();
+            const unsubscribe = checksRef.onSnapshot(doc => {
+                if (doc.exists) {
+            const data = doc.data();
+            setCalendarChecks(data.checks || {});
+            }
+            // Marca como carregado APÓS receber dados (mesmo que vazio)
+             checksLoaded.current = true;
+               }, (err) => {
+            console.error("Erro ao ler checklist:", err);
+            checksLoaded.current = true; // Libera mesmo em erro
+              });
+             return () => unsubscribe();
             }, [user]);
 
-            // Sync Checklist (Write separado pois é um doc único)
+            // Sync Checklist - Write (só executa APÓS carregar dados do Firebase)
             useEffect(() => {
-                if (!user || settings.employeeName === "Seu Nome") return;
-                // Debounce simples para checklist
-                const timer = setTimeout(() => {
-                    const { checksRef } = getRefs();
-                    checksRef.set({ checks: calendarChecks }, { merge: true });
-                }, 1000);
-                return () => clearTimeout(timer);
+                if (!user) return;
+                if (!checksLoaded.current) return; // ← BLOQUEIO PRINCIPAL do bug
+                if (Object.keys(calendarChecks).length === 0 && !checksLoaded.current) return;
+
+                 const timer = setTimeout(() => {
+                   const { checksRef } = getRefs();
+                  checksRef.set({ checks: calendarChecks }, { merge: true })
+            .then(() => console.log("✅ Checklist salvo no Firebase"))
+            .catch(err => console.error("❌ Erro ao salvar checklist:", err));
+            }, 800);
+            return () => clearTimeout(timer);
             }, [calendarChecks, user]);
 
 
@@ -1898,50 +1883,6 @@
                 }));
             }, [filteredExpenses, groupBy]);
 
-            // NOVO: Aplica a ordenação nas colunas dentro de cada grupo
-            const sortedGroupedExpenses = useMemo(() => {
-                return groupedExpenses.map(group => {
-                    if (!sortConfig.key) return group; // Retorna sem ordenação extra se não houver filtro ativo
-
-                    const sortedItems = [...group.items].sort((a, b) => {
-                        let aVal = a[sortConfig.key];
-                        let bVal = b[sortConfig.key];
-
-                        if (sortConfig.key === 'employeeName') {
-                            aVal = a.employeeName || settings.employeeName;
-                            bVal = b.employeeName || settings.employeeName;
-                        }
-
-                        // Tratamento de string para ignorar case sensitivo
-                        if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-                        if (typeof bVal === 'string') bVal = bVal.toLowerCase();
-
-                        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-                        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-                        return 0;
-                    });
-                    return { ...group, items: sortedItems };
-                });
-            }, [groupedExpenses, sortConfig, settings.employeeName]);
-
-            const handleSort = (key) => {
-                let direction = 'asc';
-                if (sortConfig.key === key && sortConfig.direction === 'asc') {
-                    direction = 'desc';
-                } else if (sortConfig.key === key && sortConfig.direction === 'desc') {
-                    key = null; // Terceiro clique remove a ordenação
-                    direction = 'asc';
-                }
-                setSortConfig({ key, direction });
-            };
-
-            const SortIcon = ({ columnKey }) => {
-                if (sortConfig.key !== columnKey) return <Icons.ArrowDown className="w-3 h-3 opacity-20 inline-block ml-1" />;
-                return sortConfig.direction === 'asc' 
-                    ? <Icons.ArrowUp className="w-3 h-3 inline-block ml-1 text-blue-500" />
-                    : <Icons.ArrowDown className="w-3 h-3 inline-block ml-1 text-blue-500" />;
-            };
-
             const totalsByStore = useMemo(() => {
                 const acc = {};
                 // Calcula totais baseados no FILTRO ATUAL (Dia ou Busca)
@@ -2297,7 +2238,7 @@
 
                                 {expenses.length > 0 && (
                                     <div className="space-y-8 print:space-y-6">
-                                            {sortedGroupedExpenses.map(group => (
+                                            {groupedExpenses.map(group => (
                                                 <div key={group.key} className="print-break-inside-avoid">
                                                     <div className="flex items-center justify-between mb-4 px-2">
                                                         <h3 className="text-lg font-bold text-slate-700 flex items-center gap-3">
@@ -2318,26 +2259,12 @@
                                                             <table className="w-full text-left text-sm relative border-collapse">
                                                                 <thead className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-white">
                                                                     <tr>
-                                                                        {groupBy === 'date' && (
-                                                                            <th onClick={() => handleSort('store')} className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest cursor-pointer hover:bg-slate-50 transition-colors select-none">
-                                                                                Loja <SortIcon columnKey="store" />
-                                                                            </th>
-                                                                        )}
-                                                                        <th onClick={() => handleSort('employeeName')} className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest cursor-pointer hover:bg-slate-50 transition-colors select-none">
-                                                                            Quem <SortIcon columnKey="employeeName" />
-                                                                        </th>
-                                                                        <th onClick={() => handleSort('category')} className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest cursor-pointer hover:bg-slate-50 transition-colors select-none">
-                                                                            Categoria <SortIcon columnKey="category" />
-                                                                        </th>
-                                                                        <th onClick={() => handleSort('date')} className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest cursor-pointer hover:bg-slate-50 transition-colors select-none">
-                                                                            Data <SortIcon columnKey="date" />
-                                                                        </th>
-                                                                        <th onClick={() => handleSort('description')} className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest cursor-pointer hover:bg-slate-50 transition-colors select-none">
-                                                                            Descrição <SortIcon columnKey="description" />
-                                                                        </th>
-                                                                        <th onClick={() => handleSort('amount')} className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest text-right cursor-pointer hover:bg-slate-50 transition-colors select-none">
-                                                                            <div className="flex justify-end items-center">Valor <SortIcon columnKey="amount" /></div>
-                                                                        </th>
+                                                                        {groupBy === 'date' && <th className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest">Loja</th>}
+                                                                        <th className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest">Quem</th>
+                                                                        <th className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest">Categoria</th>
+                                                                        <th className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest">Data</th>
+                                                                        <th className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest">Descrição</th>
+                                                                        <th className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest text-right">Valor</th>
                                                                         <th className="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-widest text-center no-print">Opções</th>
                                                                     </tr>
                                                                 </thead>
@@ -2346,7 +2273,7 @@
                                                                         <tr key={ex.id} className="hover:bg-blue-50/40 transition-colors group">
                                                                             {groupBy === 'date' && (
                                                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                                                    <span className={`store-badge-print inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm border border-white/50 backdrop-blur-sm ${getStoreColorClass(ex.store)}`}>
+                                                                                    <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm border border-white/50 backdrop-blur-sm ${getStoreColorClass(ex.store)}`}>
                                                                                         {ex.store}
                                                                                     </span>
                                                                                 </td>
