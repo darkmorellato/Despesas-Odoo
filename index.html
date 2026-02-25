@@ -262,6 +262,17 @@
             "Piracicaba (DP - Realme - XV)", "Amparo (Premium - Kassouf)", "Todas"
         ];
 
+        // ORDEM FIXA DE EXIBIÇÃO DAS LOJAS NOS RELATÓRIOS
+        const STORE_DISPLAY_ORDER = {
+             "Dom Pedro II": 1,
+             "Realme": 2,
+             "Kassouf": 3,
+            "Premium": 4,
+             "Xv de Novembro": 5,
+        };
+
+const getStoreOrder = (storeName) => STORE_DISPLAY_ORDER[storeName] || 99;
+
         const STORE_IMAGES = {
             "Dom Pedro II": "dompedro.png",
             "Realme": "realme.png",
@@ -1755,20 +1766,35 @@
             }, [expenses, searchTerm, selectedDate, selectedMonth, filterMode]);
 
             const groupedExpenses = useMemo(() => {
-                const groups = {};
-                filteredExpenses.forEach(ex => {
-                    const key = groupBy === 'date' ? ex.date : ex.store;
-                    if (!groups[key]) groups[key] = [];
-                    groups[key].push(ex);
-                });
-                const sortedKeys = Object.keys(groups).sort((a, b) => {
-                    if (groupBy === 'date') return b.localeCompare(a);
-                    return a.localeCompare(b); 
-                });
-                return sortedKeys.map(key => ({
-                    key, items: groups[key], total: groups[key].reduce((sum, item) => sum + item.amount, 0)
-                }));
-            }, [filteredExpenses, groupBy]);
+    const groups = {};
+    filteredExpenses.forEach(ex => {
+        const key = groupBy === 'date' ? ex.date : ex.store;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(ex);
+    });
+
+    const sortedKeys = Object.keys(groups).sort((a, b) => {
+        if (groupBy === 'date') return b.localeCompare(a); // Descendente
+        // Quando agrupado por loja, usa a ordem customizada
+        return getStoreOrder(a) - getStoreOrder(b);
+    });
+
+    return sortedKeys.map(key => {
+        // Ordena os itens DENTRO de cada grupo por loja (ordem fixa)
+        const sortedItems = [...groups[key]].sort((a, b) => {
+            const orderDiff = getStoreOrder(a.store) - getStoreOrder(b.store);
+            if (orderDiff !== 0) return orderDiff;
+            // Se mesma loja, ordena por descrição
+            return a.description.localeCompare(b.description);
+        });
+
+        return {
+            key,
+            items: sortedItems,
+            total: sortedItems.reduce((sum, item) => sum + item.amount, 0)
+        };
+    });
+}, [filteredExpenses, groupBy]);
 
             const totalsByStore = useMemo(() => {
                 const acc = {};
