@@ -131,9 +131,22 @@
 
         .liquid-btn-3d:active {
             transform: translateY(1px);
-            box-shadow: 
+            box-shadow:
                 inset 0 2px 4px rgba(0,0,0,0.3),
                 0 4px 10px rgba(37, 99, 235, 0.3);
+        }
+
+        .push-btn {
+            position: relative;
+            transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+        }
+        .push-btn:not(:disabled):active {
+            transform: translateY(4px) scale(0.97) !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25) !important;
+            filter: brightness(0.92) !important;
+        }
+        .push-btn:not(:disabled):active::before {
+            opacity: 0 !important;
         }
 
         .liquid-input {
@@ -1209,6 +1222,8 @@ const getStoreOrder = (storeName) => STORE_DISPLAY_ORDER[storeName] || 99;
             const [notes, setNotes] = useState('');
             const [deleteModalState, setDeleteModalState] = useState({ open: false, step: 1, id: null });
             const [passwordInput, setPasswordInput] = useState('');
+            const [isSubmitting, setIsSubmitting] = useState(false);
+            const [submitCooldown, setSubmitCooldown] = useState(0);
             
             // --- Refs ---
             const fileInputRef = useRef(null);
@@ -1481,6 +1496,7 @@ const getStoreOrder = (storeName) => STORE_DISPLAY_ORDER[storeName] || 99;
 
             const handleSubmit = useCallback(async (e) => {
                 e.preventDefault();
+                if (isSubmitting) return;
                 if (settings.employeeName === "Seu Nome" || !settings.employeeName.trim()) {
                     showToast("Configure seu nome antes de lançar.", "error");
                     setIsSettingsOpen(true);
@@ -1489,43 +1505,54 @@ const getStoreOrder = (storeName) => STORE_DISPLAY_ORDER[storeName] || 99;
                 const totalVal = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
                 if (isNaN(totalVal) || totalVal <= 0) return showToast("Valor inválido", "error");
 
-                if (editingId) {
-                    const updatedData = {
-                        date, description, store, category, amount: totalVal, notes,
-                        employeeName: settings.employeeName,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-                    await handleDBUpdate(editingId, updatedData);
-                    showToast("Lançamento atualizado!");
-                    resetForm();
-                } else {
-                    let entries = [];
-                    if (store === "Piracicaba (DP - Realme - XV)") {
-                        ["Dom Pedro II", "Realme", "Xv de Novembro"].forEach(s => entries.push({ s, v: totalVal / 3 }));
-                    } else if (store === "Amparo (Premium - Kassouf)") {
-                        ["Premium", "Kassouf"].forEach(s => entries.push({ s, v: totalVal / 2 }));
-                    } else if (store === "Todas") {
-                        ["Dom Pedro II", "Realme", "Xv de Novembro", "Premium", "Kassouf"].forEach(s => entries.push({ s, v: totalVal / 5 }));
-                    } else {
-                        entries.push({ s: store, v: totalVal });
-                    }
-
-                    for (let ent of entries) {
-                        const newDoc = {
-                            date, description, category, notes,
-                            store: ent.s,
-                            amount: ent.v,
-                            quantity: 1.0,
+                setIsSubmitting(true);
+                try {
+                    if (editingId) {
+                        const updatedData = {
+                            date, description, store, category, amount: totalVal, notes,
                             employeeName: settings.employeeName,
-                            originalTotal: entries.length > 1 ? totalVal : null,
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                         };
-                        await handleDBAdd(newDoc);
+                        await handleDBUpdate(editingId, updatedData);
+                        showToast("Lançamento atualizado!");
+                        resetForm();
+                    } else {
+                        let entries = [];
+                        if (store === "Piracicaba (DP - Realme - XV)") {
+                            ["Dom Pedro II", "Realme", "Xv de Novembro"].forEach(s => entries.push({ s, v: totalVal / 3 }));
+                        } else if (store === "Amparo (Premium - Kassouf)") {
+                            ["Premium", "Kassouf"].forEach(s => entries.push({ s, v: totalVal / 2 }));
+                        } else if (store === "Todas") {
+                            ["Dom Pedro II", "Realme", "Xv de Novembro", "Premium", "Kassouf"].forEach(s => entries.push({ s, v: totalVal / 5 }));
+                        } else {
+                            entries.push({ s: store, v: totalVal });
+                        }
+
+                        for (let ent of entries) {
+                            const newDoc = {
+                                date, description, category, notes,
+                                store: ent.s,
+                                amount: ent.v,
+                                quantity: 1.0,
+                                employeeName: settings.employeeName,
+                                originalTotal: entries.length > 1 ? totalVal : null,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            };
+                            await handleDBAdd(newDoc);
+                        }
+                        showToast(entries.length > 1 ? `${entries.length} despesas geradas!` : "Despesa salva!");
+                        resetForm();
                     }
-                    showToast(entries.length > 1 ? `${entries.length} despesas geradas!` : "Despesa salva!");
-                    resetForm();
+                } finally {
+                    setSubmitCooldown(2);
+                    const tick = setInterval(() => {
+                        setSubmitCooldown(prev => {
+                            if (prev <= 1) { clearInterval(tick); setIsSubmitting(false); return 0; }
+                            return prev - 1;
+                        });
+                    }, 1000);
                 }
-            }, [settings.employeeName, amount, date, description, store, category, notes, editingId, handleDBUpdate, handleDBAdd, resetForm, showToast]);
+            }, [isSubmitting, settings.employeeName, amount, date, description, store, category, notes, editingId, handleDBUpdate, handleDBAdd, resetForm, showToast]);
 
             const handleDeleteStep = useCallback(async () => {
                 if (passwordInput !== ADMIN_PASSWORD) {
@@ -1965,9 +1992,11 @@ const getStoreOrder = (storeName) => STORE_DISPLAY_ORDER[storeName] || 99;
                                                     <input type="text" value={notes} onChange={e => setNotes(e.target.value)} className="liquid-input w-full px-5 py-3.5 rounded-xl text-slate-600 font-medium text-sm placeholder-slate-400" />
                                                 </div>
                                             </div>
-                                            <button type="submit" className={`w-full py-4 px-6 rounded-full font-bold text-white text-base transform transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-4 ${editingId ? 'bg-gradient-to-r from-orange-400 to-amber-500 shadow-lg rounded-2xl' : 'liquid-btn-3d'}`}>
-                                                {editingId ? <Icons.Check className="w-5 h-5"/> : <Icons.Plus className="w-5 h-5"/>}
-                                                {editingId ? "Salvar Alterações" : "Adicionar Despesa"}
+                                            <button type="submit" disabled={isSubmitting} className={`push-btn w-full py-4 px-6 rounded-full font-bold text-white text-base flex items-center justify-center gap-2 mt-4 disabled:opacity-60 disabled:cursor-not-allowed ${editingId ? 'bg-gradient-to-r from-orange-400 to-amber-500 shadow-lg rounded-2xl' : 'liquid-btn-3d'}`}>
+                                                {isSubmitting ? (
+                                                    <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                                ) : editingId ? <Icons.Check className="w-5 h-5"/> : <Icons.Plus className="w-5 h-5"/>}
+                                                {isSubmitting ? (submitCooldown > 0 ? `Aguarde ${submitCooldown}s...` : "Enviando...") : editingId ? "Salvar Alterações" : "Adicionar Despesa"}
                                             </button>
                                         </form>
                                     </div>
